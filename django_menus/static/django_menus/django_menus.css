@@ -1,0 +1,13 @@
+.navbar-dark a.nav-link.active-bar{
+  color: rgba(255,255,255,.7);
+}
+
+.active-bar:after{
+        border: 2px solid #f0f0f0;
+        bottom:0;
+        content: '';
+        right:0;
+        left:0;
+        display: block;
+        position: absolute;
+}

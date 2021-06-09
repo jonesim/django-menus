@@ -1,0 +1,48 @@
+    <li id='{{ menu_item.dropdown.id }}' class="nav-item">
+        <a class="nav-link" style="color: inherit" href="javascript:void(0)" role="button" aria-haspopup="true"
+           aria-expanded="false">{{ menu_item.name }}</a>
+        <div class="dropdown-menu">
+            {% for i in menu_item.dropdown.menu_items %}
+                {% if i == '-' %}
+                    <div class="dropdown-divider"></div>
+                {% else %}
+                    <a class="dropdown-item" href="{{ i.href }}">{{ i.name }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </li>
+
+<script>
+    menu_container = $('#{{ menu_item.dropdown.id }}')
+    menu_container.hover(function(e){
+        var dropdown = $(this)
+        var menu = $('div', dropdown)
+        if (pop == undefined) {
+            var pop = new Popper($('a', dropdown), menu, {placement: '{% if placement %}{{ placement }}{% else %}bottom-start{% endif %}'})
+        }
+        if (dropdown.is(':hover')) {
+            menu.addClass('show')
+        }
+        setTimeout(function () {
+            if (!dropdown.is(':hover') && !menu.hasClass('clicked')) {
+                menu.removeClass('show')
+            }
+        }, e.type === 'mouseleave' ? 300 : 0);
+    })
+
+    menu_container.click(function () {
+        menu = $('div', $(this))
+        if (menu.hasClass('clicked')) {
+            menu.removeClass('show clicked')
+        } else {
+            menu.addClass('show clicked')
+        }
+    })
+    menu_container.focusout(function(){
+        menu = $('div', $(this))
+        if (menu.hasClass('clicked')) {
+            menu.removeClass('show clicked')
+        }
+    })
+</script>
+

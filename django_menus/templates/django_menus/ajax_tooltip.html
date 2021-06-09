@@ -1,0 +1,47 @@
+<li class="nav-item" id="tooltip-{{ tooltip_name }}">
+    <a class="nav-link" href="#">{{ menu_item.name }}</a>
+</li>
+
+<script>
+    var tooltip_start = false
+    $("#tooltip-{{ tooltip_name }}").hover(function () {
+        var _this = this;
+        if (!$(".tooltip:hover").length) {
+            tooltip_start = false
+            $(this).tooltip("dispose");
+        } else {
+            $('.tooltip').mouseleave(function () {
+                tooltip_start = false
+                $(_this).tooltip("dispose");
+            });
+        }
+    })
+    $("#tooltip-{{ tooltip_name }}").mouseover(function () {
+        if (tooltip_start) {
+            return
+        }
+        tooltip_start = true
+        tooltip_container = $("#tooltip-{{ tooltip_name }}")
+        ajax_helpers.post_json({
+            data: {tooltip: '{{ tooltip_name }}'},
+            success: function (data) {
+                tooltip_container.tooltip({
+                    placement: "bottom",
+                    delay: 0,
+                    trigger: 'manual',
+                    html: true,
+                    title: data,
+                })
+                if (tooltip_start) {
+                    tooltip_container.tooltip('show')
+                    tooltip_start = false
+                } else {
+                    tooltip_container.tooltip('dispose')
+                }
+            },
+            error: function () {
+                tooltip_start = false
+            }
+        })
+    })
+</script>

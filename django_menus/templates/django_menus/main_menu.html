@@ -1,0 +1,13 @@
+{% spaceless %}
+<ul class="navbar-nav mr-auto">
+    {% for value in menu.menu_items %}
+        {% if value.default_render %}
+            <li class="nav-item" style="position: relative" >
+                <a class="nav-link{% if value.active %} active-bar{% endif %}" href="{{ value.href }}">{{ value.name }}{{ value.badge }}</a>
+            </li>
+        {% else %}
+            {{ value.render }}
+        {% endif %}
+    {% endfor %}
+</ul>
+{% endspaceless %}
