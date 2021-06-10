@@ -1,8 +1,9 @@
+from collections import namedtuple
 from django.views.generic import TemplateView
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.urls import reverse, resolve, Resolver404
-from ajax_helpers.mixins import AjaxFileHelpers
+from ajax_helpers.mixins import AjaxHelpers
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from ajax_helpers.utils import random_string
 
@@ -25,7 +26,33 @@ class MenuItemBadge:
         return mark_safe(f'<span id="{self.id}">{self.badge_html()}<span>')
 
 
-class MenuItem:
+class BaseMenuItem:
+
+    def __init__(self, disabled=False, visible=True, css_classes=None, **kwargs):
+        self.disabled = disabled
+        self.visible = visible
+        if css_classes is None:
+            self.css_classes = []
+        else:
+            self.css_classes = css_classes
+
+    def css(self):
+        classes = self.css_classes
+        if self.disabled:
+            classes += ['disabled']
+        return ' '.join(classes)
+
+
+class DividerItem(BaseMenuItem):
+
+    default_render = False
+
+    @staticmethod
+    def render():
+        return mark_safe('<div class="dropdown-divider"></div>')
+
+
+class MenuItem(BaseMenuItem):
 
     HREF = 0
     AJAX_GET_URL_NAME = 1
@@ -34,7 +61,8 @@ class MenuItem:
     JAVASCRIPT = 4
 
     def __init__(self, name, url=None, menu=None, link_type=URL_NAME, template=None, badge=None, target=None,
-                 dropdown=None, **kwargs):
+                 dropdown=None,  **kwargs):
+        super().__init__(**kwargs)
 
         self.name = mark_safe(name)
         self.url = url
@@ -44,10 +72,10 @@ class MenuItem:
         self.menu = menu
         self.target = target
         self._badge = badge
+
         if dropdown:
-            self.dropdown = HtmlMenu().add_items(*dropdown)
-            if self.template is None:
-                self.template = 'django_menus/dropdown.html'
+            self.dropdown = HtmlMenu(template_name='django_menus/dropdown.html').add_items(*dropdown)
+            self.css_classes.append('dropdown-toggle')
         if self.template:
             self.default_render = False
         else:
@@ -67,7 +95,7 @@ class MenuItem:
                 return
         else:
             if (self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME, self.HREF]
-                    and self.menu.view.request.path == self.raw_href()):
+                    and self.menu.request.path == self.raw_href()):
                 return True
 
     @property
@@ -90,13 +118,16 @@ class MenuItem:
         elif self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
             return reverse(self.url)
         elif self.link_type == self.AJAX_BUTTON:
-            return f"javascript:{button_javascript(self.url)}"
+            button = button_javascript(self.url).replace('"', "'")
+            return f"javascript:{button}"
         elif self.link_type == self.JAVASCRIPT:
-            return f"javascript:{(self.url)}"
+            return f"javascript:{self.url}"
         else:
             return f"{self.url}"
 
     def href(self):
+        if self.disabled:
+            return 'javascript:void(0)'
         href = self.raw_href()
         if self.link_type == self.AJAX_GET_URL_NAME:
             href = f"javascript: ajax_helpers.get_content('{href}')"
@@ -107,26 +138,26 @@ class MenuItem:
 
 class HtmlMenu:
 
-    def __init__(self, view=None, template_name='django_menus/tab_menu.html', menu_id=None):
+    def __init__(self, request=None, template_name='django_menus/tab_menu.html', menu_id=None):
         self.menu_items = []
         self.template = template_name
-        self.view = view
+        self.request = request
         self.active = None
         if menu_id:
             self.id = menu_id
         else:
             self.id = random_string()
 
+    def visible_items(self):
+        return [i for i in self.menu_items if i.visible]
+
     def add_item(self, text, url_name=None, link_type=MenuItem.URL_NAME, **kwargs):
-        if text == '-':
-            self.menu_items.append('-')
-        else:
-            self.menu_items.append(MenuItem(text, url=url_name, menu=self, link_type=link_type, **kwargs))
+        self.menu_items.append(MenuItem(text, url=url_name, menu=self, link_type=link_type, **kwargs))
 
     def add_items(self, *args):
         if isinstance(args[0], (tuple, list, MenuItem)):
             for a in args:
-                if isinstance(a, MenuItem):
+                if isinstance(a, BaseMenuItem):
                     a.menu = self
                     self.menu_items.append(a)
                 else:
@@ -143,56 +174,91 @@ class HtmlMenu:
                 for i in self.menu_items if i.has_badge]
 
     def render(self):
-        return mark_safe(render_to_string(self.template, context={'menu': self}))
+        extra_menus = ''
+        for i in self.menu_items:
+            if hasattr(i, 'dropdown'):
+                extra_menus += i.dropdown.render()
+        return mark_safe(render_to_string(self.template, context={'menu': self}) + extra_menus)
 
 
-class MenuMixin(AjaxFileHelpers, TemplateView):
+class MenuMixin:
     tab_template = None
 
-    def setup_menu(self):
-        pass
-
     def add_menu(self, menu_name, **kwargs):
-        self.menus[menu_name] = HtmlMenu(self, **kwargs)
+        self.menus[menu_name] = HtmlMenu(self.request, **kwargs)
         return self.menus[menu_name]
+
+    def add_main_menu(self, menu_name='main_menu', **kwargs):
+        return self.add_menu(menu_name, template_name='django_menus/main_menu.html', **kwargs)
+
+    def add_button_menu(self, menu_name='button_group', **kwargs):
+        return self.add_menu(menu_name, template_name='django_menus/button_group.html', **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.menus = {}
-        self.context = None
 
-    @staticmethod
-    def html_command(selector, html):
-        return {'function': 'html', 'selector': selector, 'html': html}
+
+class TemplateMenuView(MenuMixin, TemplateView):
+
+    def setup_menu(self):
+        return
+
+    def get_context_data(self, **kwargs):
+        self.setup_menu()
+        context = super().get_context_data(**kwargs)
+        context['menus'] = self.menus
+        return context
+
+
+class AjaxTabs(AjaxHelpers):
+
+    TEMPLATE_CONTENT = 0
+    MENU_CONTENT = 1
+    AjaxCommand = namedtuple('AjaxCommand', ['name', 'type'])
+
+    _ajax_commands = [
+        AjaxCommand('tab_template', TEMPLATE_CONTENT),
+        AjaxCommand('tab_menu', MENU_CONTENT),
+    ]
+
+    additional_content = []
+
+    def create_ajax_commands(self, context):
+        for c in self.ajax_commands:
+            if c.type == self.TEMPLATE_CONTENT:
+                html = context[c.name]
+            else:
+                html = self.menus[c.name].render()
+            self.add_command('html', selector='#' + c.name, html=html)
 
     def get(self, request, *args, **kwargs):
+        self.ajax_commands = self._ajax_commands + [self.AjaxCommand(*a) for a in self.additional_content]
         if request.is_ajax():
-            self.get_context_data(**kwargs)
-            self.add_command('html', selector='#tab-content', html=self.tab_content())
-            self.add_command('html', selector='#tab-menu', html=self.menus['tab_menu'].render())
+            context = self.get_context_data(**kwargs)
+            self.create_ajax_commands(context)
             response = self.command_response()
             response['Cache-Control'] = 'No-Cache,No-Store'
             return response
         return super().get(request, *args, **kwargs)
 
-    @staticmethod
-    def main_context_data(**_kwargs):
+    def main_context(self, **kwargs):
         return {}
 
-    def tab_content(self):
-        return mark_safe(render_to_string(self.tab_template, context=self.context))
+    def tab_context(self, **kwargs):
+        return {}
 
     def get_context_data(self, **kwargs):
-        self.setup_menu()
         context = super().get_context_data(**kwargs)
         if not self.request.is_ajax():
-            context.update(self.main_context_data())
-        self.context = context
+            context.update(self.main_context())
+        context.update(self.tab_context())
+        for c in self.ajax_commands:
+            if c.type == self.TEMPLATE_CONTENT:
+                context[c.name] = mark_safe(render_to_string(getattr(self, c.name), context=context))
         return context
 
     def timer_menu(self, **_kwargs):
-        if self.request.user.is_anonymous:
-            return self.command_response('reload')
         self.setup_menu()
         for m in self.menus.values():
             self.response_commands += m.badge_ajax()
