@@ -1,14 +1,11 @@
 {% spaceless %}
 <div class="btn-group">
-    {% for value in menu.menu_items %}
+    {% for value in menu.visible_items %}
         {% if value.default_render %}
-            <a href="{{ value.href }}" class="btn btn-primary{% if value.active %} active{% endif %}" {{ value.attributes }}>{{ value.name }}</a>
+            <a {% if value.dropdown %}id="{{ value.dropdown.id }}"{% endif %} href="{{ value.href }}" class="btn btn-primary{% if value.active %} active{% endif %}" {{ value.attributes }}>{{ value.name }}</a>
         {% else %}
             {{ value.render }}
         {% endif %}
     {% endfor %}
 </div>
 {% endspaceless %}
-
-
-
