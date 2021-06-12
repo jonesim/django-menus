@@ -3,7 +3,9 @@
     {% for value in menu.visible_items %}
         {% if value.default_render %}
             <li {% if value.dropdown %}id="{{ value.dropdown.id }}"{% endif %} class="nav-item" style="position: relative" >
-                <a class="nav-link{% if value.active %} active-bar{% endif %} " href="{{ value.href }}"><span class="{{ value.css }}">{{ value.name }}{{ value.badge }}</span></a>
+                <a class="nav-link{% if value.active %} active{% endif %} {{ value.css }}" href="{{ value.href }}">
+                    <span {% if value.dropdown and value.show_caret %}class="dropdown-toggle"{% endif %}">{{ value.name }}{{ value.badge }}</span>
+                </a>
             </li>
         {% else %}
             {{ value.render }}

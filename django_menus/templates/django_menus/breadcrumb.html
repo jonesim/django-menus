@@ -1,0 +1,20 @@
+{% spaceless %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {% for value in menu.visible_items %}
+                {% if value.default_render %}
+                    {% if value.active %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ value.name }}{{ value.badge }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item">
+                            <a href="{{ value.href }}"
+                               class="{{ value.css }}" {{ value.attributes }}>{{ value.name }}{{ value.badge }}</a>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    {{ value.render }}
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+{% endspaceless %}

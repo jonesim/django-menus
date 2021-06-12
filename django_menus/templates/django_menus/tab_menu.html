@@ -1,6 +1,6 @@
 {% spaceless %}
 <ul class="nav nav-tabs">
-    {% for value in menu.menu_items %}
+    {% for value in menu.visible_items %}
         {% if value.default_render %}
             <li class="nav-item">
                 <a class="nav-link{% if value.active %} active{% endif %}" href="{{ value.href }}">{{ value.name }}{{ value.badge }}</a>
