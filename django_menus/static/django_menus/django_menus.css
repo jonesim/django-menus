@@ -2,7 +2,7 @@
   color: rgba(255,255,255,.7);
 }
 
-.active-bar:after{
+.navbar-dark.active-bar .active:after{
         border: 2px solid #f0f0f0;
         bottom:0;
         content: '';
@@ -11,3 +11,4 @@
         display: block;
         position: absolute;
 }
+
