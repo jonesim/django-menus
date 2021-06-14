@@ -36,8 +36,8 @@ class AjaxTabExample(MainMenu, AjaxMenuTabs):
         self.menus['main_menu'].active = 'ajaxtab'
 
         self.add_menu('button_menu', 'button_group').add_items(
-            MenuItem('ajaxtab', 'But1'),
-            ('content2', 'But2'),
+            MenuItem('ajaxtab', 'Tab 1'),
+            ('content2', 'Tab 2'),
         )
 
     @staticmethod

@@ -4,10 +4,15 @@
     <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
         {{ menus.main_menu.render }}
     </nav>
+
     <div class="p-4">
-            {% menu_content 'button_menu' %}
     <h4>{{ main_data }}</h4>
 
+    <h3> This menu reloads the whole page </h3>
+        {% menu_content 'button_menu' %}
+    <hr>
+        <h3> Tab menu reloads the tabs with an ajax call</h3>
+        <br>
         {% menu_content 'tab_menu' %}
         {% template_content 'tab_template' %}
     </div>
