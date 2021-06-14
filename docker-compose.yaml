@@ -1,0 +1,18 @@
+version: "3"
+services:
+
+ django_menus:
+  build:
+   context: ./
+  volumes:
+   - ./django_examples/:/app
+   - ./django_menus/:/menus/django_menus
+   - /var/run/docker.sock:/var/run/docker.sock
+  command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8009"
+  environment:
+   - PYTHONPATH=/menus
+  ports:
+   - 8009:8009
+
+
+

@@ -1,0 +1,7 @@
+Django==2.2.5
+django-ajax-helpers
+
+
+
+
+

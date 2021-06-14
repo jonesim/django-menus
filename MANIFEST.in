@@ -1,0 +1,2 @@
+recursive-include django_menus *
+recursive-exclude django_menus *.pyc
