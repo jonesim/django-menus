@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load example_tags django_menu_tags ajax_helpers %}
+{% block contents %}
+    <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
+        {{ menus.main_menu.render }}
+    </nav>
+    <div class="p-4">
+            {% menu_content 'button_menu' %}
+    <h4>{{ main_data }}</h4>
+
+        {% menu_content 'tab_menu' %}
+        {% template_content 'tab_template' %}
+    </div>
+    </div>
+{% ajax_timer 'menu' 10000 %}
+
+{% endblock %}
+
