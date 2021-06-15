@@ -1,6 +1,6 @@
 import datetime
 from ajax_helpers.mixins import AjaxHelpers
-from django_menus.menu import MenuItem, DividerItem, MenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
+from django_menus.menu import MenuItem, DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
     MenuItemDisplay
 from django.utils.safestring import mark_safe
 
@@ -13,7 +13,7 @@ def setup_main_menu(request):
     return menu
 
 
-class MainMenu(MenuTemplateView):
+class MainMenu(AjaxMenuTemplateView):
 
     def setup_menu(self):
         super().setup_menu()
@@ -57,7 +57,7 @@ class AjaxTabExample2(AjaxTabExample):
     tab_template = 'tab_template2.html'
 
 
-class View1(AjaxHelpers, MainMenu):
+class View1(MainMenu):
     template_name = 'view1.html'
     breadcrumb = ['view1']
 
