@@ -281,6 +281,19 @@ class MenuMixin:
             self.menus[menu_name] = HtmlMenu(request, **kwargs)
         return self.menus[menu_name]
 
+    def get_context_data(self, **kwargs):
+        self.setup_menu()
+        super_context = getattr(super(), 'get_context_data')
+        if super_context and callable(super_context):
+            context = super_context(**kwargs)
+        else:
+            context = {}
+        context['menus'] = self.menus
+        return context
+
+    def setup_menu(self):
+        return
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.menus = {}
@@ -288,14 +301,7 @@ class MenuMixin:
 
 class MenuTemplateView(MenuMixin, TemplateView):
 
-    def setup_menu(self):
-        return
-
-    def get_context_data(self, **kwargs):
-        self.setup_menu()
-        context = super().get_context_data(**kwargs)
-        context['menus'] = self.menus
-        return context
+    pass
 
 
 class AjaxMenuTemplateView(AjaxHelpers, MenuTemplateView):
