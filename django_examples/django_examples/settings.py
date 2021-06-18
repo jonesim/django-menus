@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+from django_menus.menu import MenuItemDisplay
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -122,3 +124,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+DJANGO_MENUS_BUTTON_DEFAULTS = {'global_edit': MenuItemDisplay('Edit-global-default', 'fas fa-pen', 'btn-success')}

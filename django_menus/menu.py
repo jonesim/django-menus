@@ -6,7 +6,7 @@ from django.urls import reverse, resolve, Resolver404
 from ajax_helpers.mixins import AjaxHelpers
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from ajax_helpers.utils import random_string
-
+from django.conf import settings
 
 class MenuItemBadge:
 
@@ -227,7 +227,15 @@ class HtmlMenu:
                  placement=None, no_hover=False, button_defaults=None):
 
         self.menu_items = []
-        self.button_defaults = button_defaults
+
+        global_button_default = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS')
+        if global_button_default is not None and button_defaults is not None:
+            self.button_defaults = {**global_button_default, **button_defaults}
+        elif global_button_default is not None:
+            self.button_defaults = global_button_default
+        elif button_defaults is not None:
+            self.button_defaults = button_defaults
+
         self.template = self.templates.get(template, template)
         self.request = request
         self.active = None
