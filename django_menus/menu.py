@@ -8,6 +8,7 @@ from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from ajax_helpers.utils import random_string
 from django.conf import settings
 
+
 class MenuItemBadge:
 
     def __init__(self, badge_id, format_function=None):
@@ -113,12 +114,12 @@ class MenuItem(BaseMenuItem):
 
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
-                 placement='bottom-start', url_args=None, url_kwargs=None, **kwargs):
+                 placement='bottom-start', url_args=None, url_kwargs=None, attributes=None, **kwargs):
         super().__init__(**kwargs)
-
         self._resolved_url = None
         self.link_type = link_type
         self._href = self.raw_href(url, url_args, url_kwargs)
+        self._attributes = attributes
 
         if menu_display is None and url is not None and link_type in [self.AJAX_GET_URL_NAME, self.URL_NAME]:
             view_class = self.resolved_url.func.view_class
@@ -145,6 +146,11 @@ class MenuItem(BaseMenuItem):
             self.default_render = False
         else:
             self.default_render = True
+
+    def attributes(self):
+        if self._attributes:
+            return mark_safe(' '.join([f'{k}="{v}"' for k, v in self._attributes.items()]))
+        return ''
 
     @property
     def name(self):
