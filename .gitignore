@@ -1,1 +1,8 @@
 /django_examples/db.sqlite3
+/django-tab-menus/django-tab-menus_link.egg-info/
+*.pyc
+.idea/
+build/
+dist/
+/django/db.sqlite3
+/django-tab-menus.egg-info/
