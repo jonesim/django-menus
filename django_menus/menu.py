@@ -227,14 +227,9 @@ class HtmlMenu:
                  placement=None, no_hover=False, button_defaults=None):
 
         self.menu_items = []
-
-        global_button_default = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS')
-        if global_button_default is not None and button_defaults is not None:
-            self.button_defaults = {**global_button_default, **button_defaults}
-        elif global_button_default is not None:
-            self.button_defaults = global_button_default
-        elif button_defaults is not None:
-            self.button_defaults = button_defaults
+        self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
+        if button_defaults is not None:
+            self.button_defaults.update(button_defaults)
 
         self.template = self.templates.get(template, template)
         self.request = request
