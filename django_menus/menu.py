@@ -1,5 +1,5 @@
 from collections import namedtuple
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.urls import reverse, resolve, Resolver404
@@ -121,12 +121,12 @@ class MenuItem(BaseMenuItem):
         self._href = self.raw_href(url, url_args, url_kwargs)
         self._attributes = attributes
 
-        if menu_display is None and url is not None and link_type in [self.AJAX_GET_URL_NAME, self.URL_NAME]:
+        if menu_display is None and url is not None and link_type in [self.AJAX_GET_URL_NAME, self.URL_NAME, self.HREF]:
             view_class = self.resolved_url.func.view_class
             if hasattr(view_class, 'menu_display'):
                 menu_display = view_class.menu_display
             else:
-                menu_display = url.capitalize()
+                menu_display = self.resolved_url.url_name.capitalize()
 
         self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
         self.kwargs = kwargs
@@ -258,6 +258,8 @@ class HtmlMenu:
             if isinstance(a, BaseMenuItem):
                 a.menu = self
                 self.menu_items.append(a)
+            elif isinstance(a, View):
+                self.add_item(a.request.path, getattr(a, 'menu_display', None), MenuItem.HREF)
             elif type(a) == tuple:
                 if type(a[-1]) == dict:
                     self.add_item(*a[:-1], **a[-1])
