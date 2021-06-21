@@ -97,6 +97,10 @@ class MenuItem(BaseMenuItem):
     AJAX_BUTTON = 3
     JAVASCRIPT = 4
 
+    RESOLVABLE_LINK_TYPES = [AJAX_GET_URL_NAME,
+                             URL_NAME,
+                             HREF]
+
     @property
     def menu(self):
         return self._menu
@@ -121,7 +125,7 @@ class MenuItem(BaseMenuItem):
         self._href = self.raw_href(url, url_args, url_kwargs)
         self._attributes = attributes
 
-        if menu_display is None and url is not None and link_type in [self.AJAX_GET_URL_NAME, self.URL_NAME, self.HREF]:
+        if menu_display is None and url is not None and link_type in self.RESOLVABLE_LINK_TYPES:
             view_class = self.resolved_url.func.view_class
             if hasattr(view_class, 'menu_display'):
                 menu_display = view_class.menu_display
@@ -177,7 +181,7 @@ class MenuItem(BaseMenuItem):
             except Resolver404:
                 return
         else:
-            if (self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME, self.HREF]
+            if (self.link_type in self.RESOLVABLE_LINK_TYPES
                     and self.menu.request.path == self._href):
                 return True
 
