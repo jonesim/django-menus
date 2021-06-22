@@ -124,14 +124,16 @@ class MenuItem(BaseMenuItem):
         self.link_type = link_type
         self._href = self.raw_href(url, url_args, url_kwargs)
         self._attributes = attributes
-
-        if menu_display is None and url is not None and link_type in self.RESOLVABLE_LINK_TYPES:
+        self.menu_config = {}
+        if url is not None and link_type in self.RESOLVABLE_LINK_TYPES:
             view_class = self.resolved_url.func.view_class
-            if hasattr(view_class, 'menu_display'):
-                menu_display = view_class.menu_display
-            else:
-                menu_display = self.resolved_url.url_name.capitalize()
-
+            if not menu_display:
+                if hasattr(view_class, 'menu_display'):
+                    menu_display = view_class.menu_display
+                else:
+                    menu_display = self.resolved_url.url_name.capitalize()
+            if hasattr(view_class, 'menu_config'):
+                self.menu_config = view_class.menu_config
         self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
         self.kwargs = kwargs
         self.template = template
@@ -152,8 +154,16 @@ class MenuItem(BaseMenuItem):
             self.default_render = True
 
     def attributes(self):
+        attributes = {}
+        if 'attributes' in self.menu_config:
+            if type(self.menu_config['attributes']) == dict:
+                attributes.update(self.menu_config['attributes'])
+            else:
+                attributes.update(self.external_function(self.menu_config['attributes']))
         if self._attributes:
-            return mark_safe(' '.join([f'{k}="{v}"' for k, v in self._attributes.items()]))
+            attributes.update(self._attributes)
+        if attributes:
+            return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
         return ''
 
     @property
@@ -212,11 +222,22 @@ class MenuItem(BaseMenuItem):
         else:
             return f"{name_url}"
 
+    def external_function(self, function_def):
+        if callable(function_def):
+            return function_def(self)
+        elif isinstance(function_def, (list, tuple)):
+            return function_def[0](self, *function_def[1:])
+
     def href(self):
         if self.disabled:
             return 'javascript:void(0)'
         href = self._href
-        if self.link_type == self.AJAX_GET_URL_NAME:
+        if 'href_format' in self.menu_config:
+            if type(self.menu_config['href_format']) == str:
+                href = self.menu_config['href_format'].format(href)
+            else:
+                href = self.external_function(self.menu_config['href_format'])
+        elif self.link_type == self.AJAX_GET_URL_NAME:
             href = f"javascript: ajax_helpers.get_content('{href}')"
         if self.target:
             href += f'" target="{self.target}'
