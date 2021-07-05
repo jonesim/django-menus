@@ -122,7 +122,10 @@ class MenuItem(BaseMenuItem):
         super().__init__(**kwargs)
         self._resolved_url = None
         self.link_type = link_type
-        self._href = self.raw_href(url, url_args, url_kwargs)
+        split_url = url.split(',') if url else [None]
+        if url_args is None and len(split_url) > 1:
+            url_args = split_url[1:]
+        self._href = self.raw_href(split_url[0], url_args, url_kwargs)
         self._attributes = attributes
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES:
@@ -133,7 +136,10 @@ class MenuItem(BaseMenuItem):
                 else:
                     menu_display = self.resolved_url.url_name.capitalize()
             if hasattr(view_class, 'menu_config'):
-                self.menu_config = view_class.menu_config
+                if callable(view_class.menu_config):
+                    self.menu_config: dict = view_class.menu_config()
+                else:
+                    self.menu_config: dict = view_class.menu_config
         self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
         self.kwargs = kwargs
         self.template = template
@@ -255,8 +261,7 @@ class HtmlMenu:
     }
 
     def __init__(self, request=None, template='base', menu_id=None,
-                 placement=None, no_hover=False, button_defaults=None):
-
+                 placement=None, no_hover=False, button_defaults=None, alignment=None):
         self.menu_items = []
         self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
         if button_defaults is not None:
@@ -267,6 +272,7 @@ class HtmlMenu:
         self.active = None
         self.no_hover = no_hover
         self.placement = placement
+        self.alignment = alignment
         if menu_id:
             self.id = menu_id
         else:

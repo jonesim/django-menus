@@ -1,5 +1,5 @@
 {% spaceless %}
-<ul class="navbar-nav mr-auto">
+<ul class="navbar-nav {% if menu.alignment == 'right' %}ml-auto{% else %}mr-auto{% endif %}">
     {% for value in menu.visible_items %}
         {% if value.default_render %}
             <li {% if value.dropdown %}id="{{ value.dropdown.id }}"{% endif %} class="nav-item" style="position: relative" >
