@@ -1,5 +1,7 @@
 import datetime
 from ajax_helpers.mixins import AjaxHelpers
+
+from examples.globals import DUMMY_MENU_DROP_DOWN_ID, DUMMY_MENU_ID
 from django_menus.menu import MenuItem, DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
     MenuItemDisplay
 from django.utils.safestring import mark_safe
@@ -120,6 +122,13 @@ class View1(MainMenu):
             MenuItem('view1', badge=MenuItemBadge('demo_badge_1', self.demo_badge1)),
             MenuItem('view2', badge=MenuItemBadge('demo_badge_2', self.demo_badge2)),
             'view3')
+
+        self.add_menu('loop_buttons', 'button_group').add_items(
+            (f"alert('{DUMMY_MENU_ID}')", 'Test loop id', MenuItem.JAVASCRIPT),
+            MenuItem(menu_display='', placement='bottom-end', css_classes='btn-secondary',
+                     dropdown_kwargs={'menu_id': DUMMY_MENU_DROP_DOWN_ID},
+                     dropdown=((f"alert('{DUMMY_MENU_ID}')", 'Test loop id', MenuItem.JAVASCRIPT),
+                               )))
 
         self.add_menu('dropdown').add_items(
             MenuItem(menu_display='Dropdown', dropdown=('view1', MenuItem('view2', visible=True), 'view3')),

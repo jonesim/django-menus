@@ -77,6 +77,18 @@
     <nav class="navbar navbar-expand-sm navbar-light">
         {{ menus.dropdown.render }}
     </nav>
+
+    <h4 class="m-3">Loops</h4>
+    <p class="m-3">One way of doing loops is to use a custom template tag. Tag not included in the package</p>
+    <p class="m-3">PK = 1</p>
+    <div class="m-3">
+        {% show_menu menus.loop_buttons pk=1 %}
+    </div>
+    <p class="m-3">PK = 99</p>
+    <div class="m-3">
+        {% show_menu menus.loop_buttons pk=99 %}
+    </div>
+
     <br>
     <br>
 

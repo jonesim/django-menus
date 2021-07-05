@@ -118,7 +118,8 @@ class MenuItem(BaseMenuItem):
 
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
-                 placement='bottom-start', url_args=None, url_kwargs=None, attributes=None, **kwargs):
+                 placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
+                 dropdown_kwargs=None, **kwargs):
         super().__init__(**kwargs)
         self._resolved_url = None
         self.link_type = link_type
@@ -148,8 +149,10 @@ class MenuItem(BaseMenuItem):
         self.show_caret = show_caret
 
         if dropdown:
+            if dropdown_kwargs is None:
+                dropdown_kwargs = {}
             self.dropdown = HtmlMenu(template='dropdown',
-                                     no_hover=no_hover, placement=placement).add_items(*dropdown)
+                                     no_hover=no_hover, placement=placement, **dropdown_kwargs).add_items(*dropdown)
         else:
             self.dropdown = None
             self.show_caret = False
