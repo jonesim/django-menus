@@ -140,6 +140,7 @@ class MenuItem(BaseMenuItem):
                 if callable(view_class.menu_config):
                     self.menu_config: dict = view_class.menu_config()
                 else:
+                    # noinspection PyTypeChecker
                     self.menu_config: dict = view_class.menu_config
         self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
         self.kwargs = kwargs
@@ -190,19 +191,19 @@ class MenuItem(BaseMenuItem):
 
     @property
     def active(self):
-        if self.menu.active:
-            try:
-                url_name = self.resolved_url.url_name
-                if self.resolved_url.namespace:
-                    url_name = f'{self.resolved_url.namespace}:{url_name}'
-                if url_name == self.menu.active:
+        if self.menu:
+            if self.menu.active:
+                try:
+                    url_name = self.resolved_url.url_name
+                    if self.resolved_url.namespace:
+                        url_name = f'{self.resolved_url.namespace}:{url_name}'
+                    if url_name == self.menu.active:
+                        return True
+                except Resolver404:
+                    return
+            else:
+                if self.link_type in self.RESOLVABLE_LINK_TYPES and self.menu.request.path == self._href:
                     return True
-            except Resolver404:
-                return
-        else:
-            if (self.link_type in self.RESOLVABLE_LINK_TYPES
-                    and self.menu.request.path == self._href):
-                return True
 
     @property
     def badge(self):
@@ -216,6 +217,8 @@ class MenuItem(BaseMenuItem):
             return True
 
     def render(self):
+        if self.template is None:
+            self.template = 'django_menus/single_button.html'
         return render_to_string(self.template, dict(**{'menu_item': self}, **self.kwargs))
 
     def raw_href(self, name_url, url_args, url_kwargs):
@@ -276,10 +279,8 @@ class HtmlMenu:
         self.no_hover = no_hover
         self.placement = placement
         self.alignment = alignment
-        if menu_id:
-            self.id = menu_id
-        else:
-            self.id = random_string()
+        self.fixed_id = menu_id
+        self.id = None
 
     def visible_items(self):
         return [i for i in self.menu_items if i.visible]
@@ -308,6 +309,10 @@ class HtmlMenu:
                 for i in self.menu_items if i.has_badge]
 
     def render(self):
+        if self.fixed_id:
+            self.id = self.fixed_id
+        else:
+            self.id = random_string()
         extra_menus = ''
         for i in self.menu_items:
             if hasattr(i, 'dropdown') and i.dropdown:
