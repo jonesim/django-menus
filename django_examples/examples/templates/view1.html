@@ -79,7 +79,7 @@
     </nav>
 
     <h4 class="m-3">Loops</h4>
-    <p class="m-3">One way of doing loops is to use a custom template tag. Tag not included in the package</p>
+    <p class="m-3">One way of doing loops is to use a custom template tag. Tag not included in the package.</p>
     <p class="m-3">PK = 1</p>
     <div class="m-3">
         {% show_menu menus.loop_buttons pk=1 %}
@@ -89,6 +89,17 @@
         {% show_menu menus.loop_buttons pk=99 %}
     </div>
 
+     <h4 class="m-3">Attributes</h4>
+    <p class="m-3">This link has additional attributes </p>
+    <div class="m-3">
+        {{ menus.attr.render }}
+    </div>
+
+    <h4 class="m-3">Display Button</h4>
+    <p class="m-3">Shows you away of displaying a single button with the 'display_button' template tag. </p>
+    <div class="m-3">
+        {% display_button url='view1' %}
+    </div>
     <br>
     <br>
 
