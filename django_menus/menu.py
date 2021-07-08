@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from collections import namedtuple
 from django.views.generic import TemplateView, View
 from django.template.loader import render_to_string
@@ -129,7 +130,7 @@ class MenuItem(BaseMenuItem):
         self._href = self.raw_href(split_url[0], url_args, url_kwargs)
         self._attributes = attributes
         self.menu_config = {}
-        if url is not None and link_type in self.RESOLVABLE_LINK_TYPES:
+        if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = self.resolved_url.func.view_class
             if not menu_display:
                 if hasattr(view_class, 'menu_display'):
@@ -183,7 +184,10 @@ class MenuItem(BaseMenuItem):
     @property
     def resolved_url(self):
         if self._resolved_url is None:
-            self._resolved_url = resolve(self._href)
+            try:
+                self._resolved_url = resolve(urlparse(self._href).path)
+            except Resolver404:
+                self._resolved_url = 'invalid'
         return self._resolved_url
 
     def params(self):
