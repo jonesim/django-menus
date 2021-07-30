@@ -124,10 +124,12 @@ class MenuItem(BaseMenuItem):
         super().__init__(**kwargs)
         self._resolved_url = None
         self.link_type = link_type
-        split_url = url.split(',') if url else [None]
-        if url_args is None and len(split_url) > 1:
-            url_args = split_url[1:]
-        self._href = self.raw_href(split_url[0], url_args, url_kwargs)
+        if self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
+            split_url = url.split(',') if url else [None]
+            if url_args is None and len(split_url) > 1:
+                url_args = split_url[1:]
+                url = split_url[0]
+        self._href = self.raw_href(url, url_args, url_kwargs)
         self._attributes = attributes
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
