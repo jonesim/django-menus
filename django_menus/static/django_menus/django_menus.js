@@ -11,6 +11,8 @@ dropdown_menu_function = function (reference, placement = 'bottom-start') {
         var menu = $('#' + reference.attr('id') + '-menu')
         if (pop == undefined) {
             pop = new Popper(reference, menu, {placement: placement})
+        } else {
+            pop.update()
         }
         if (reference.is(':hover')) {
             $('.menu-system.show').removeClass('show')
