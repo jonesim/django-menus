@@ -5,7 +5,7 @@ with open("readme.md", "r") as fh:
 
 setuptools.setup(
     name="django-tab-menus",
-    version="0.0.9",
+    version="0.0.10",
     author="Ian Jones",
     description="Django app to render menus and load tabs with Ajax",
     long_description=long_description,
