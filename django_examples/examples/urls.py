@@ -16,4 +16,5 @@ urlpatterns = [
     path('view3/', views.View3.as_view(), name='view3'),
     path('view4/', views.View4.as_view(), name='view4'),
 
+    path('source_code/<str:slug>', views.SourceCodeModal.as_view(), name='source_code')
 ]

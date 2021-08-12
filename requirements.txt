@@ -1,5 +1,8 @@
 Django==2.2.5
-django-ajax-helpers
+django-ajax-helpers==0.0.4
+django-show-source-code
+django-crispy-forms
+
 
 
 

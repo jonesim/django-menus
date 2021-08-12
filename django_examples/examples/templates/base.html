@@ -1,5 +1,5 @@
 <!doctype html>
-{% load static %}
+{% load static src_code %}
 <html>
 <head>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/all.css" crossorigin="anonymous">
+
+    {% highlighjs_includes %}
+    <script src="{% static 'django_modals/js/modals.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'django_modals/css/modals.css' %}"/>
+
 </head>
 
 <body>

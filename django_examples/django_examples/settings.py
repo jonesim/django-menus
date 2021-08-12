@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     'ajax_helpers',
     'django_menus',
     'examples',
+    'django_modals',
+    'show_src_code',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load django_menu_tags example_tags ajax_helpers %}
+{% load django_menu_tags example_tags ajax_helpers src_code %}
 {% block contents %}
 
     <nav class="navbar navbar-expand-lg bg-dark navbar-dark active-bar">
@@ -9,25 +9,41 @@
 
     <h4 class="m-3"> Menu Items</h4>
     <p class="m-3">
-    MenuItems can be setup using strings, tuples or classes
+        MenuItems can be setup using strings, tuples or classes
     </p>
     <div class="m-3">
-        {{ menus.menu_items.render }}
+        <div>
+            {{ menus.menu_items.render }}
+        </div>
+        <div class="mt-2">
+            {% show_src_code 'source_code' 'menu_item' %}
+        </div>
     </div>
 
 
     <h4 class="m-3"> Menu Display</h4>
     <p class="m-3">
-    The menu item text, icon and css can be setup in different ways. If not set it will attempt to read the attibute menu_display (see view 4)
+        The menu item text, icon and css can be setup in different ways. If not set it will attempt to read the attibute
+        menu_display (see view 4)
     </p>
     <div class="m-3">
-        {{ menus.menu_display.render }}
+        <div>
+            {{ menus.menu_display.render }}
+        </div>
+        <div class="mt-2">
+            {% show_src_code 'source_code' 'menu_display' %}
+        </div>
     </div>
 
 
     <h4 class="m-3"> Links</h4>
     <div class="m-3">
-        {{ menus.link_examples.render }}
+        <div>
+            {{ menus.link_examples.render }}
+        </div>
+        <div class="mt-2">
+            {% show_src_code 'source_code' 'menu_links' %}
+        </div>
     </div>
 
     <h4 class="m-3"> Button Groups</h4>
@@ -42,6 +58,9 @@
     <div class="m-3">
         {{ menus.demo_css.render }}
     </div>
+    <div class="m-3">
+        {% show_src_code 'source_code' 'button_groups' %}
+    </div>
 
     <h4 class="m-3">Tab menus</h4>
 
@@ -49,6 +68,9 @@
         {{ menus.tab_menu.render }}
     </div>
 
+    <div class="m-3">
+        {% show_src_code 'source_code' 'tab_menu' %}
+    </div>
 
     <h4 class="m-3">Navigation Bar</h4>
     <nav class="navbar navbar-expand-sm navbar-light">
@@ -77,6 +99,9 @@
     <nav class="navbar navbar-expand-sm navbar-light">
         {{ menus.dropdown.render }}
     </nav>
+    <div class="m-3">
+        {% show_src_code 'source_code' 'dropdowns' %}
+    </div>
 
     <h4 class="m-3">Loops</h4>
     <p class="m-3">One way of doing loops is to use a custom template tag. Tag not included in the package.</p>
@@ -89,7 +114,7 @@
         {% show_menu menus.loop_buttons pk=99 %}
     </div>
 
-     <h4 class="m-3">Attributes</h4>
+    <h4 class="m-3">Attributes</h4>
     <p class="m-3">This link has additional attributes </p>
     <div class="m-3">
         {{ menus.attr.render }}

@@ -1,7 +1,6 @@
 import datetime
-from ajax_helpers.mixins import AjaxHelpers
-
-from examples.globals import DUMMY_MENU_DROP_DOWN_ID, DUMMY_MENU_ID
+from show_src_code.modals import BaseSourceCodeModal
+from examples.globals import DUMMY_MENU_ID
 from django_menus.menu import MenuItem, DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
     MenuItemDisplay
 from django.utils.safestring import mark_safe
@@ -66,16 +65,16 @@ class View1(MainMenu):
     def button_test_button(self, *args, **kwargs):
         return self.command_response('message', text='From view')
 
-    def setup_menu(self):
-        super().setup_menu()
-
+    def menu_item_menu(self):
         self.add_menu('menu_items', 'button_group').add_items(
             'string',
             ('string', 'Tuple', {'css_classes': 'btn-secondary'}),
             MenuItem('view1', 'Class'),
         )
 
+    def menu_display_menu(self):
         defaults = {'edit': MenuItemDisplay('Edit-default', 'fas fa-pen', 'btn-success')}
+
         self.add_menu('menu_display', 'button_group', button_defaults=defaults).add_items(
             'url_name',
             ('string', 'String', {'css_classes': ['btn-secondary']}),
@@ -89,15 +88,20 @@ class View1(MainMenu):
             MenuItem('view1', 'global_edit'),  # comes from DJANGO_MENUS_BUTTON_DEFAULTS
         )
 
+    def menu_links(self):
         self.add_menu('link_examples', 'button_group').add_items(
             ('view1', 'Simple URL name'),
             ('int_path', 'Path with url args', {'url_args': [1]}),
             ('int_path', 'Path with url kwargs', {'url_kwargs': {'int': 2}}),
-            ('/view1/', 'Raw URL', MenuItem.HREF),
+            ('/view1/#123', 'Raw URL', MenuItem.HREF),
+            ("ajax_helpers.post_json({'data': {'button': 'delete'}, 'url': '/modal/company/52/'})", 'Raw URL',
+             MenuItem.HREF),
+
             ("alert('javascript alert')", 'Javascript', MenuItem.JAVASCRIPT),
             ('test_button', 'Send to View', MenuItem.AJAX_BUTTON),
-
         )
+
+    def button_groups(self):
 
         self.add_menu('demo', 'button_group').add_items('view1', 'view2', 'view3', 'view4')
 
@@ -111,25 +115,15 @@ class View1(MainMenu):
 
         self.add_menu('demo_css', 'button_group').add_items(
             MenuItem('view1', ('View 1', 'fas fa-eye', ['btn-danger'])),
-            'view2', 'view3', MenuItem('view4', 'View 4 override', css_classes=['btn-warning']))
+            'view2',
+            'view3',
+            MenuItem('view4', 'View 4 override', css_classes=['btn-warning'])
+        )
 
+    def tab_menu(self):
         self.add_menu('tab_menu', 'tabs').add_items('view1', 'view2', 'view3', 'view4')
-        self.add_menu('main').add_items('view1', 'view2', 'view3', ('view4', 'View 4'))
 
-        self.add_menu('breadcrumb', 'breadcrumb').add_items(*self.breadcrumb)
-
-        self.add_menu('badge').add_items(
-            MenuItem('view1', badge=MenuItemBadge('demo_badge_1', self.demo_badge1)),
-            MenuItem('view2', badge=MenuItemBadge('demo_badge_2', self.demo_badge2)),
-            'view3')
-
-        self.add_menu('loop_buttons', 'button_group').add_items(
-            (f"alert('{DUMMY_MENU_ID}')", 'Test loop id', MenuItem.JAVASCRIPT),
-            MenuItem(menu_display='', placement='bottom-end', css_classes='btn-secondary',
-                     dropdown_kwargs={'menu_id': DUMMY_MENU_DROP_DOWN_ID},
-                     dropdown=((f"alert('{DUMMY_MENU_ID}')", 'Test loop id', MenuItem.JAVASCRIPT),
-                               )))
-
+    def dropdowns(self):
         self.add_menu('dropdown').add_items(
             MenuItem(menu_display='Dropdown', dropdown=('view1', MenuItem('view2', visible=True), 'view3')),
             MenuItem(menu_display='Hidden item', dropdown=('view1', MenuItem('view2', visible=False), 'view3')),
@@ -138,6 +132,30 @@ class View1(MainMenu):
             MenuItem(menu_display='No Caret', show_caret=False, dropdown=('view1', 'view2', 'view3')),
             MenuItem(menu_display='No hover', no_hover=True, dropdown=('view1', 'view2', 'view3')),
         )
+
+    def setup_menu(self):
+        super().setup_menu()
+        self.menu_item_menu()
+        self.menu_display_menu()
+        self.menu_links()
+        self.button_groups()
+        self.tab_menu()
+
+        self.add_menu('main').add_items('view1', 'view2', 'view3', ('view4', 'View 4'))
+
+        self.add_menu('breadcrumb', 'breadcrumb').add_items(*self.breadcrumb)
+
+        self.add_menu('badge').add_items(
+            MenuItem('view1', badge=MenuItemBadge('demo_badge_1', self.demo_badge1)),
+            MenuItem('view2', badge=MenuItemBadge('demo_badge_2', self.demo_badge2)),
+            'view3')
+        self.dropdowns()
+
+        self.add_menu('loop_buttons', 'button_group').add_items(
+            (f"alert('{DUMMY_MENU_ID}')", 'Test loop id', MenuItem.JAVASCRIPT),
+            MenuItem(menu_display='', placement='bottom-end', css_classes='btn-secondary',
+                     dropdown=((f"alert('{DUMMY_MENU_ID}')", 'Test loop id', MenuItem.JAVASCRIPT),
+                               )))
 
         self.add_menu('attr', 'button_group').add_items(
             MenuItem('view1', 'Look at link', attributes={'data-toggle': 'hello_world', 'data-target': 'this_world'})
@@ -165,10 +183,21 @@ class View2(View1):
 
 
 class View3(View1):
-    breadcrumb = ['view1', 'view2', 'view3']
+    breadcrumb = ['view1', 'view2', 'view3', 'view5']
     menu_display = 'View-3'
 
 
 class View4(View1):
     breadcrumb = ['view1', 'view2', 'view3', ('view4', 'View4')]
     menu_display = MenuItemDisplay('View4', font_awesome='fas fa-adjust', css_classes=['btn-success'])
+
+
+class SourceCodeModal(BaseSourceCodeModal):
+    code = {
+        'menu_item': View1.menu_item_menu,
+        'menu_display': View1.menu_display_menu,
+        'menu_links': View1.menu_links,
+        'button_groups': View1.button_groups,
+        'tab_menu': View1.tab_menu,
+        'dropdowns': View1.dropdowns,
+    }
