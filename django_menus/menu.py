@@ -270,6 +270,7 @@ class HtmlMenu:
         'button_group': 'django_menus/button_group.html',
         'breadcrumb': 'django_menus/breadcrumb.html',
         'dropdown': 'django_menus/dropdown.html',
+        'buttons': 'django_menus/button_menu.html',
     }
 
     def __init__(self, request=None, template='base', menu_id=None,
