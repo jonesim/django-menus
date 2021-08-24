@@ -1,21 +1,11 @@
 <!doctype html>
-{% load static src_code %}
+{% load static ajax_helpers %}
 <html>
 <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
-    <script src="{% static 'ajax_helpers/ajax_helpers.js' %}"></script>
-    <link href="{% static 'ajax_helpers/ajax_helpers.css' %}" rel="stylesheet"/>
-    <script src="{% static 'django_menus/django_menus.js' %}"></script>
-    <link href="{% static 'django_menus/django_menus.css' %}" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css">
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/all.css" crossorigin="anonymous">
-
-    {% highlighjs_includes %}
-    <script src="{% static 'django_modals/js/modals.js' %}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static 'django_modals/css/modals.css' %}"/>
-
+    {% lib_include 'ajax_helpers' 'Bootstrap' 'FontAwesome' module='ajax_helpers.includes' %}
+    {% lib_include module='django_menus.includes' %}
+    {% lib_include module='show_src_code.includes' %}
+    {% lib_include 'Modals' module='django_modals.includes' %}
 </head>
 
 <body>
