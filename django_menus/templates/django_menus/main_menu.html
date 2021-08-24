@@ -4,7 +4,7 @@
         {% if value.default_render %}
             <li {% if value.dropdown %}id="{{ value.dropdown.id }}"{% endif %} class="nav-item" style="position: relative" >
                 <a class="nav-link{% if value.active %} active{% endif %} {{ value.css }}" href="{{ value.href }}">
-                    <span {% if value.dropdown and value.show_caret %}class="dropdown-toggle"{% endif %}">{{ value.name }}{{ value.badge }}</span>
+                    <span{% if value.dropdown and value.show_caret %} class="dropdown-toggle"{% endif %}>{{ value.name }}{{ value.badge }}</span>
                 </a>
             </li>
         {% else %}
