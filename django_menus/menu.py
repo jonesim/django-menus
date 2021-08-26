@@ -25,7 +25,7 @@ class MenuItemBadge:
         return ''
 
     def __str__(self):
-        return mark_safe(f'<span id="{self.id}">{self.badge_html()}<span>')
+        return mark_safe(f'<span id="{self.id}">{self.badge_html()}</span>')
 
 
 class BaseMenuItem:
