@@ -183,7 +183,7 @@ class View2(View1):
 
 
 class View3(View1):
-    breadcrumb = ['view1', 'view2', 'view3', 'view5']
+    breadcrumb = ['view1', 'view2', 'view3', 'view4']
     menu_display = 'View-3'
 
 
