@@ -1,6 +1,11 @@
+from importlib.metadata import PackageNotFoundError
+
 from ajax_helpers.html_include import SourceBase, pip_version
 
-version = pip_version('django-tab-menus')
+try:
+    version = pip_version('django-tab-menus')
+except PackageNotFoundError:
+    version = 'local'
 
 
 class DjangoMenus(SourceBase):
