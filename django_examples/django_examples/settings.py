@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'ajax_helpers',
     'django_menus',
-    'examples',
+    'menu_examples',
     'django_modals',
     'show_src_code',
     'crispy_forms',
