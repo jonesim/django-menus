@@ -1,9 +1,12 @@
 from django.urls import path
+from django.views.generic.base import RedirectView
 import menu_examples.views as views
 
 
 urlpatterns = [
-    path('', views.View1.as_view(), name='main'),
+    path('menu', views.View1.as_view(), name='main'),
+    path('', RedirectView.as_view(pattern_name='main', )),
+    path('menu-redirect/', RedirectView.as_view(pattern_name='main', ), name='django-tab-menus'),
     path('intpath/<int:int>', views.View2.as_view(), name='int_path'),
 
     path('ajax-tab-example/', views.AjaxTabExample.as_view(), name='ajaxtab'),
