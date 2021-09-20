@@ -1,0 +1,2 @@
+recursive-include menu_examples *
+recursive-exclude menu_examples *.pyc
