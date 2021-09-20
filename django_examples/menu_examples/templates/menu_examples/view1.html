@@ -1,10 +1,17 @@
-{% extends 'base.html' %}
+{% extends 'menu_examples/base.html' %}
 {% load django_menu_tags example_tags ajax_helpers src_code %}
 {% block contents %}
 
     <nav class="navbar navbar-expand-lg bg-dark navbar-dark active-bar">
         {{ menus.main_menu.render }}
     </nav>
+    <div class="m-1 text-right">
+     <img src="{{ version_img }}">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ home_page }}"><i class="fab fa-github text-dark"></i>GitHub</a>
+     {% show_src_code 'show_src_code:source_code_modal' view_class %}
+    </div>
+
+
     <h3 class="m-3">{{ title }}</h3>
 
     <h4 class="m-3"> Menu Items</h4>

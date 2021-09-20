@@ -1,9 +1,11 @@
 import datetime
 from show_src_code.modals import BaseSourceCodeModal
-from examples.globals import DUMMY_MENU_ID
+from menu_examples.globals import DUMMY_MENU_ID
 from django_menus.menu import MenuItem, DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
     MenuItemDisplay
 from django.utils.safestring import mark_safe
+from show_src_code.view_mixins import DemoViewMixin
+from django_menus.menu import MenuMixin, MenuItem
 
 
 def setup_main_menu(request):
@@ -14,7 +16,7 @@ def setup_main_menu(request):
     return menu
 
 
-class MainMenu(AjaxMenuTemplateView):
+class MainMenu(DemoViewMixin, AjaxMenuTemplateView):
 
     def setup_menu(self):
         super().setup_menu()
@@ -23,8 +25,8 @@ class MainMenu(AjaxMenuTemplateView):
 
 class AjaxTabExample(MainMenu, AjaxMenuTabs):
 
-    template_name = 'base_ajax_tabs.html'
-    tab_template = 'tab_template.html'
+    template_name = 'menu_examples/base_ajax_tabs.html'
+    tab_template = 'menu_examples/tab_template.html'
     additional_content = [('button_menu', AjaxMenuTabs.MENU_CONTENT)]
 
     def setup_menu(self):
@@ -55,11 +57,11 @@ class AjaxTabExample(MainMenu, AjaxMenuTabs):
 
 class AjaxTabExample2(AjaxTabExample):
 
-    tab_template = 'tab_template2.html'
+    tab_template = 'menu_examples/tab_template2.html'
 
 
 class View1(MainMenu):
-    template_name = 'view1.html'
+    template_name = 'menu_examples/view1.html'
     breadcrumb = ['view1']
 
     def button_test_button(self, *args, **kwargs):
