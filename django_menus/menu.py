@@ -59,13 +59,13 @@ class MenuItemDisplay:
 
         if isinstance(text, self.__class__):
             self.text = text.text
-            self.font_awesome = text.font_awesome
-            self.css_classes = text.css_classes
+            self.font_awesome = font_awesome if font_awesome else text.font_awesome
+            self.css_classes = css_classes if css_classes else text.css_classes
         elif isinstance(text, (tuple, list)):
             params = {c: v for c, v in enumerate(text)}
             self.text = params.get(0)
-            self.font_awesome = params.get(1)
-            self.css_classes = params.get(2)
+            self.font_awesome = font_awesome if font_awesome else params.get(1)
+            self.css_classes = css_classes if css_classes else params.get(2)
         else:
             self.text = text
             self.font_awesome = font_awesome
