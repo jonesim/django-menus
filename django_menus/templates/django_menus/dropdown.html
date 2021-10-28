@@ -2,7 +2,7 @@
 <div id='{{ menu.id }}-menu' class="dropdown-menu" role="menu">
     {% for i in menu.visible_items %}
         {% if i.default_render %}
-            <a  class="dropdown-item {{ i.css }}" href="{{ i.href }}">{{ i.name }}</a>
+            <a  class="dropdown-item {{ i.css }}" href="{{ i.href }}" {{ i.attributes }}>{{ i.name }}</a>
         {% else %}
             {{ i.render }}
         {% endif %}
