@@ -134,7 +134,7 @@ class MenuItem(BaseMenuItem):
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = self.resolved_url.func.view_class
-            if not menu_display:
+            if menu_display is None:
                 if hasattr(view_class, 'menu_display'):
                     menu_display = view_class.menu_display
                 else:

@@ -87,6 +87,7 @@ class View1(MainMenu):
             MenuItem('view1', ('Tuple', 'fas fa-exclamation-circle', ['btn-danger'])),
             MenuItem('view1', MenuItemDisplay(text='MenuItemDisplay', css_classes=['btn-dark'])),
             MenuItem('view1', 'edit'),
+            MenuItem('view1', menu_display='', font_awesome='fas fa-pen'),  # just a font awesome icon
             MenuItem('view1', 'global_edit'),  # comes from DJANGO_MENUS_BUTTON_DEFAULTS
         )
 
