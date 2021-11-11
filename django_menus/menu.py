@@ -12,20 +12,24 @@ from django.conf import settings
 
 class MenuItemBadge:
 
-    def __init__(self, badge_id, format_function=None):
+    def __init__(self, badge_id=None, format_function=None, text=None, css_class=None):
         self.id = badge_id
-        self.text = None
-        self.css_class = None
+        self.text = text
+        self.css_class = css_class
         self.format_function = format_function
 
     def badge_html(self):
-        self.format_function(self)
+        if self.format_function:
+            self.format_function(self)
         if self.text:
-            return mark_safe(f'<sup class="badge badge-pill badge-{self.css_class}">{self.text}</sup>')
+            return mark_safe(f' <sup><span class="badge badge-pill badge-{self.css_class}">{self.text}</span></sup>')
         return ''
 
     def __str__(self):
-        return mark_safe(f'<span id="{self.id}">{self.badge_html()}</span>')
+        if self.id:
+            return mark_safe(f'<span id="{self.id}">{self.badge_html()}</span>')
+        else:
+            return mark_safe(self.badge_html())
 
 
 class BaseMenuItem:
