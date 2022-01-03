@@ -420,3 +420,13 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
             if c.type == self.TEMPLATE_CONTENT:
                 context[c.name] = mark_safe(render_to_string(getattr(self, c.name), context=context))
         return context
+
+
+class AjaxButtonMenuItem(MenuItem):
+
+    def __init__(self, button_name, menu_display=None, url_name=None, url_args=None, ajax_kwargs=None, **kwargs):
+        ajax_kwargs = ajax_kwargs if ajax_kwargs else {}
+        super().__init__(button_javascript(button_name, url_name, url_args, **ajax_kwargs).replace('"', "'"),
+                         menu_display,
+                         link_type=MenuItem.JAVASCRIPT,
+                         **kwargs)
