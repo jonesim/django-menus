@@ -1,5 +1,5 @@
 Django==3.2.7
-django-ajax-helpers==0.0.15
+django-ajax-helpers==0.0.17
 django-show-source-code==0.0.7
-django-nested-modals==0.0.10
+django-nested-modals==0.0.18
 django-crispy-forms==1.12.0

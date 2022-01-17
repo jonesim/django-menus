@@ -6,3 +6,4 @@ build/
 dist/
 /django/db.sqlite3
 /django-tab-menus.egg-info/
+/django_tab_menus.egg-info/
