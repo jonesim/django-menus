@@ -1,4 +1,7 @@
 import datetime
+
+from django_modals.modals import Modal
+from django_modals.helper import base64_json
 from show_src_code.modals import BaseSourceCodeModal
 from menu_examples.globals import DUMMY_MENU_ID
 from django_menus.menu import MenuItem, DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
@@ -12,6 +15,7 @@ def setup_main_menu(request):
     menu = HtmlMenu(request).add_items(
         'view1',
         ('ajaxtab', 'Ajax Tabs', ),
+        ('modal_examples', 'Modal Examples'),
     )
     return menu
 
@@ -89,6 +93,7 @@ class View1(MainMenu):
             MenuItem('view1', 'edit'),
             MenuItem('view1', menu_display='', font_awesome='fas fa-pen'),  # just a font awesome icon
             MenuItem('view1', 'global_edit'),  # comes from DJANGO_MENUS_BUTTON_DEFAULTS
+            MenuItem('admin:index')
         )
 
     def menu_links(self):
@@ -204,3 +209,28 @@ class SourceCodeModal(BaseSourceCodeModal):
         'tab_menu': View1.tab_menu,
         'dropdowns': View1.dropdowns,
     }
+
+
+class ModalExamples(MainMenu):
+    template_name = 'menu_examples/modal_examples.html'
+
+    def setup_menu(self):
+        super().setup_menu()
+        self.add_menu('modals', 'buttons').add_items(
+            ('test_modal', 'Simple Modal'),
+            ('test_modal,XYZ', 'Modal with simple string slug'),
+            ('test_modal,key-XYZ', 'Modal with string slug'),
+            ('test_modal', 'Modal with url_args (pk) slug', {'url_args': ('ABC',)}),
+            ('test_modal', 'Modal with url_args dict slug', {'url_args': ('key-ABC',)}),
+
+            (f'test_modal64,{base64_json({"key-Y": "value"})}', 'base64 params as string'),
+            ('test_modal64', 'base64 params as dict', {'url_args': (base64_json({'key-X': 'value'}),)}),
+
+        )
+
+
+class TestModal(Modal):
+    button_container_class = 'text-center'
+
+    def modal_content(self):
+        return f'Slug {self.slug.__str__()}'

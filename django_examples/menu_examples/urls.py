@@ -19,5 +19,10 @@ urlpatterns = [
     path('view3/', views.View3.as_view(), name='view3'),
     path('view4/', views.View4.as_view(), name='view4'),
 
+    path('modals/', views.ModalExamples.as_view(), name='modal_examples'),
+    path('modal/', views.TestModal.as_view(), name='test_modal'),
+    path('modal/<str:slug>', views.TestModal.as_view(), name='test_modal'),
+    path('modal64/<str:base64>', views.TestModal.as_view(), name='test_modal64'),
+
     path('source_code/<str:slug>', views.SourceCodeModal.as_view(), name='source_code')
 ]

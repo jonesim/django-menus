@@ -1,5 +1,5 @@
 <!doctype html>
-{% load static ajax_helpers %}
+{% load static ajax_helpers src_code %}
 <html>
 <head>
     {% lib_include 'ajax_helpers' 'Bootstrap' 'FontAwesome' module='ajax_helpers.includes' %}
@@ -9,7 +9,14 @@
 </head>
 
 <body>
-
+    <nav class="navbar navbar-expand-lg bg-dark navbar-dark active-bar">
+        {{ menus.main_menu.render }}
+    </nav>
+    <div class="m-1 text-right">
+     <img src="{{ version_img }}">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ home_page }}"><i class="fab fa-github text-dark"></i>GitHub</a>
+     {% show_src_code 'show_src_code:source_code_modal' view_class %}
+    </div>
 {% block contents %}
 
 {% endblock %}
