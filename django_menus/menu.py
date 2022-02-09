@@ -211,7 +211,7 @@ class MenuItem(BaseMenuItem):
                         return True
                 except Resolver404:
                     return
-            else:
+            elif self.menu.request is not None:
                 if self.link_type in self.RESOLVABLE_LINK_TYPES and self.menu.request.path == self._href:
                     return True
 
