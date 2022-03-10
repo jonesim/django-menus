@@ -202,7 +202,7 @@ class MenuItem(BaseMenuItem):
     @property
     def active(self):
         if self.menu:
-            if self.menu.active:
+            if self.menu.active and self.resolved_url != 'invalid':
                 try:
                     url_name = self.resolved_url.url_name
                     if self.resolved_url.namespace:
