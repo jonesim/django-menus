@@ -22,7 +22,7 @@ class MenuItemBadge:
         if self.format_function:
             self.format_function(self)
         if self.text:
-            return mark_safe(f' <sup><span class="badge badge-pill badge-{self.css_class}">{self.text}</span></sup>')
+            return mark_safe(f'&nbsp;<sup><span class="badge badge-pill badge-{self.css_class}">{self.text}</span></sup>')
         return ''
 
     def __str__(self):
