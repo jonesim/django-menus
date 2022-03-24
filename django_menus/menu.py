@@ -124,8 +124,11 @@ class MenuItem(BaseMenuItem):
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
-                 dropdown_kwargs=None, **kwargs):
+                 dropdown_kwargs=None, tooltip=None, **kwargs):
         super().__init__(**kwargs)
+        if tooltip:
+            attributes = {} if attributes is None else attributes
+            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
         self._resolved_url = None
         self.link_type = link_type
         if self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
