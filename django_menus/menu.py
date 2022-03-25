@@ -58,22 +58,22 @@ class DividerItem(BaseMenuItem):
 
 
 class MenuItemDisplay:
-    def __init__(self, text=None, font_awesome=None, css_classes=None):
+    def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None):
         self._css_classes = None
 
-        if isinstance(text, self.__class__):
-            self.text = text.text
-            self.font_awesome = font_awesome if font_awesome else text.font_awesome
-            self.css_classes = css_classes if css_classes else text.css_classes
-        elif isinstance(text, (tuple, list)):
+        if isinstance(text, (tuple, list)):
             params = {c: v for c, v in enumerate(text)}
             self.text = params.get(0)
             self.font_awesome = font_awesome if font_awesome else params.get(1)
             self.css_classes = css_classes if css_classes else params.get(2)
+            self.tooltip = tooltip if tooltip else params.get(3)
+            self._attributes = attributes if attributes else params.get(4)
         else:
             self.text = text
             self.font_awesome = font_awesome
             self.css_classes = css_classes
+            self.tooltip = tooltip
+            self._attributes = attributes
 
     def display(self):
         if self.font_awesome:
@@ -92,6 +92,9 @@ class MenuItemDisplay:
             self._css_classes = [css]
         else:
             self._css_classes = css
+
+    def attributes(self):
+        return MenuItem.attr(self._attributes, self.tooltip)
 
 
 class MenuItem(BaseMenuItem):
@@ -114,21 +117,27 @@ class MenuItem(BaseMenuItem):
     def menu(self, menu):
         self._menu = menu
         if menu.button_defaults and self.name in menu.button_defaults:
-            self.menu_display = MenuItemDisplay(menu.button_defaults[self.name])
+            self.menu_display = menu.button_defaults[self.name]
+            if not isinstance(self.menu_display, MenuItemDisplay):
+                self.menu_display = MenuItemDisplay(self.menu_display)
         if self.dropdown:
             self.dropdown.menu = menu
 
     def css(self):
         return ' '.join(self.menu_display.css_classes + (['disabled'] if self.disabled else []))
 
+    @staticmethod
+    def attr(attributes, tooltip):
+        attributes = {} if attributes is None else attributes
+        if tooltip:
+            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
+        return attributes
+
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_kwargs=None, tooltip=None, **kwargs):
         super().__init__(**kwargs)
-        if tooltip:
-            attributes = {} if attributes is None else attributes
-            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
         self._resolved_url = None
         self.link_type = link_type
         if self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
@@ -137,7 +146,7 @@ class MenuItem(BaseMenuItem):
                 url_args = split_url[1:]
                 url = split_url[0]
         self._href = self.raw_href(url, url_args, url_kwargs)
-        self._attributes = attributes
+        self._attributes = self.attr(attributes, tooltip)
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = getattr(self.resolved_url.func, 'view_class', None)
@@ -152,7 +161,10 @@ class MenuItem(BaseMenuItem):
                 else:
                     # noinspection PyTypeChecker
                     self.menu_config: dict = view_class.menu_config
-        self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
+        if isinstance(menu_display, MenuItemDisplay):
+            self.menu_display = menu_display
+        else:
+            self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
         self.kwargs = kwargs
         self.template = template
         self.target = target
@@ -180,8 +192,8 @@ class MenuItem(BaseMenuItem):
                 attributes.update(self.menu_config['attributes'])
             else:
                 attributes.update(self.external_function(self.menu_config['attributes']))
-        if self._attributes:
-            attributes.update(self._attributes)
+        attributes.update(self._attributes)
+        attributes.update(self.menu_display.attributes())
         if attributes:
             return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
         return ''
