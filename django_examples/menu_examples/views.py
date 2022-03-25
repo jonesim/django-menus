@@ -90,7 +90,7 @@ class View1(MainMenu):
                      font_awesome='fas fa-exclamation-triangle', css_classes=['btn-success']),
             MenuItem('view1', ('Tuple', 'fas fa-exclamation-circle', ['btn-danger'])),
             MenuItem('view1', MenuItemDisplay(text='MenuItemDisplay', css_classes=['btn-dark'])),
-            MenuItem('view1', 'edit'),
+            MenuItem('view1', 'edit', tooltip='tooltip'),
             MenuItem('view1', menu_display='', font_awesome='fas fa-pen'),  # just a font awesome icon
             MenuItem('view1', 'global_edit'),  # comes from DJANGO_MENUS_BUTTON_DEFAULTS
             MenuItem('admin:index')
@@ -197,7 +197,7 @@ class View3(View1):
 
 class View4(View1):
     breadcrumb = ['view1', 'view2', 'view3', ('view4', 'View4')]
-    menu_display = MenuItemDisplay('View4', font_awesome='fas fa-adjust', css_classes=['btn-success'])
+    menu_display = MenuItemDisplay('View4', font_awesome='fas fa-adjust', css_classes=['btn-success'], tooltip='Menu display tool tip')
 
 
 class SourceCodeModal(BaseSourceCodeModal):
