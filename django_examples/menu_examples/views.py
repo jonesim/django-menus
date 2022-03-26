@@ -106,6 +106,7 @@ class View1(MainMenu):
              MenuItem.HREF),
 
             ("alert('javascript alert')", 'Javascript', MenuItem.JAVASCRIPT),
+            ("alert('javascript alert')", 'Javascript on click', MenuItem.JAVASCRIPT_ON_CLICK),
             ('test_button', 'Send to View', MenuItem.AJAX_BUTTON),
         )
 

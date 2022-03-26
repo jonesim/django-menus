@@ -104,6 +104,7 @@ class MenuItem(BaseMenuItem):
     URL_NAME = 2
     AJAX_BUTTON = 3
     JAVASCRIPT = 4
+    JAVASCRIPT_ON_CLICK = 5
 
     RESOLVABLE_LINK_TYPES = [AJAX_GET_URL_NAME,
                              URL_NAME,
@@ -146,6 +147,12 @@ class MenuItem(BaseMenuItem):
                 url_args = split_url[1:]
                 url = split_url[0]
         self._href = self.raw_href(url, url_args, url_kwargs)
+
+        self.onclick = None
+        if self.link_type == self.JAVASCRIPT_ON_CLICK:
+            self.onclick = self._href
+            self._href = '#'
+
         self._attributes = self.attr(attributes, tooltip)
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
