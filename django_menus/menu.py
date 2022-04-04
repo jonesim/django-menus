@@ -403,21 +403,33 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
     additional_content = []
 
     def create_ajax_commands(self, context):
-        for c in self.ajax_commands:
+        for c in self.ajax_response_commands:
             if c.type == self.TEMPLATE_CONTENT:
                 html = context[c.name]
             else:
                 html = self.menus[c.name].render()
             self.add_command('html', selector='#' + c.name, html=html)
 
+    def __init__(self, *args, **kwargs):
+        self.ajax_response_commands = None
+        super().__init__(*args, **kwargs)
+
+    def set_response_commands(self):
+        if not self.ajax_response_commands:
+            self.ajax_response_commands = self._ajax_commands + [self.AjaxCommand(*a) for a in self.additional_content]
+
+    def tab_response(self):
+        self.set_response_commands()
+        context = self.get_context_data(**self.kwargs)
+        self.create_ajax_commands(context)
+        response = self.command_response()
+        response['Cache-Control'] = 'No-Cache,No-Store'
+        return response
+
     def get(self, request, *args, **kwargs):
-        self.ajax_commands = self._ajax_commands + [self.AjaxCommand(*a) for a in self.additional_content]
+        self.set_response_commands()
         if request.is_ajax():
-            context = self.get_context_data(**kwargs)
-            self.create_ajax_commands(context)
-            response = self.command_response()
-            response['Cache-Control'] = 'No-Cache,No-Store'
-            return response
+            return self.tab_response()
         return super().get(request, *args, **kwargs)
 
     def main_context(self, **kwargs):
@@ -431,7 +443,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
         if not self.request.is_ajax():
             context.update(self.main_context())
         context.update(self.tab_context())
-        for c in self.ajax_commands:
+        for c in self.ajax_response_commands:
             if c.type == self.TEMPLATE_CONTENT:
                 context[c.name] = mark_safe(render_to_string(getattr(self, c.name), context=context))
         return context
