@@ -227,8 +227,11 @@ class MenuItem(BaseMenuItem):
                 except Resolver404:
                     return
             elif self.menu.request is not None:
-                if self.link_type in self.RESOLVABLE_LINK_TYPES and self.menu.request.path == self._href:
-                    return True
+                if self.link_type in self.RESOLVABLE_LINK_TYPES:
+                    if self.menu.compare_full_path:
+                        return self.menu.request.get_full_path() == self._href
+                    else:
+                        return self.menu.request.path == self._href
 
     @property
     def badge(self):
@@ -293,7 +296,7 @@ class HtmlMenu:
     }
 
     def __init__(self, request=None, template='base', menu_id=None,
-                 placement=None, no_hover=False, button_defaults=None, alignment=None):
+                 placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False):
         self.menu_items = []
         self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
         if button_defaults is not None:
@@ -307,6 +310,7 @@ class HtmlMenu:
         self.alignment = alignment
         self.fixed_id = menu_id
         self.id = None
+        self.compare_full_path = compare_full_path
 
     def visible_items(self):
         return [i for i in self.menu_items if i.visible]
