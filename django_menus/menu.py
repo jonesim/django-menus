@@ -1,3 +1,4 @@
+import json
 from urllib.parse import urlparse
 from collections import namedtuple
 from django.views.generic import TemplateView, View
@@ -6,7 +7,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse, resolve, Resolver404
 from ajax_helpers.mixins import AjaxHelpers
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
-from ajax_helpers.utils import random_string
+from ajax_helpers.utils import random_string, ajax_command
 from django.conf import settings
 
 
@@ -295,7 +296,7 @@ class HtmlMenu:
         'buttons': 'django_menus/button_menu.html',
     }
 
-    def __init__(self, request=None, template='base', menu_id=None,
+    def __init__(self, request=None, template='base', menu_id=None, 
                  placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False):
         self.menu_items = []
         self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
@@ -407,6 +408,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
     additional_content = []
 
     def create_ajax_commands(self, context):
+        self.add_command('clear_timers', store='tab')
         for c in self.ajax_response_commands:
             if c.type == self.TEMPLATE_CONTENT:
                 html = context[c.name]
@@ -439,8 +441,18 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
     def main_context(self, **kwargs):
         return {}
 
+    def get_tab_commands(self):
+        pass
+
     def tab_context(self, **kwargs):
-        return {}
+        tab_commands = self.get_tab_commands()
+        context = {}
+        if tab_commands:
+            command = ajax_command('onload', commands=tab_commands)
+            context['tabs_script'] = mark_safe(
+                f'<script>ajax_helpers.process_commands([{json.dumps(command)}])</script>'
+            )
+        return context
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
