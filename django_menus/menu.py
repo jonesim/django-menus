@@ -296,7 +296,7 @@ class HtmlMenu:
         'buttons': 'django_menus/button_menu.html',
     }
 
-    def __init__(self, request=None, template='base', menu_id=None, 
+    def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
                  placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False):
         self.menu_items = []
         self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
@@ -312,11 +312,13 @@ class HtmlMenu:
         self.fixed_id = menu_id
         self.id = None
         self.compare_full_path = compare_full_path
+        self.default_link_type = default_link_type
 
     def visible_items(self):
         return [i for i in self.menu_items if i.visible]
 
-    def add_item(self, url_name=None, text=None,  link_type=MenuItem.URL_NAME, **kwargs):
+    def add_item(self, url_name=None, text=None,  link_type=None, **kwargs):
+        link_type = link_type if link_type is not None else self.default_link_type
         self.menu_items.append(MenuItem(url=url_name, menu_display=text, menu=self, link_type=link_type, **kwargs))
 
     def add_items(self, *args):
