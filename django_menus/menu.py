@@ -105,6 +105,7 @@ class MenuItem(BaseMenuItem):
     URL_NAME = 2
     AJAX_BUTTON = 3
     JAVASCRIPT = 4
+    AJAX_COMMAND = 5
 
     RESOLVABLE_LINK_TYPES = [AJAX_GET_URL_NAME,
                              URL_NAME,
@@ -258,6 +259,10 @@ class MenuItem(BaseMenuItem):
         elif self.link_type == self.AJAX_BUTTON:
             button = button_javascript(name_url).replace('"', "'")
             return f"javascript:{button}"
+        elif self.link_type == self.AJAX_COMMAND:
+            command = [name_url] if isinstance(name_url, dict) else name_url
+            command = json.dumps(command).replace('"', "'")
+            return f"javascript:ajax_helpers.process_commands({command})"
         elif self.link_type == self.JAVASCRIPT:
             return f"javascript:{name_url}"
         else:
