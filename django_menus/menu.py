@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse, resolve, Resolver404
 from ajax_helpers.mixins import AjaxHelpers
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
-from ajax_helpers.utils import random_string, ajax_command
+from ajax_helpers.utils import random_string, ajax_command, is_ajax
 from django.conf import settings
 
 
@@ -441,7 +441,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
 
     def get(self, request, *args, **kwargs):
         self.set_response_commands()
-        if request.is_ajax():
+        if is_ajax(request):
             return self.tab_response()
         return super().get(request, *args, **kwargs)
 
@@ -463,7 +463,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if not self.request.is_ajax():
+        if not is_ajax(self.request):
             context.update(self.main_context())
         context.update(self.tab_context())
         for c in self.ajax_response_commands:
