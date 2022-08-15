@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse, resolve, Resolver404
 from ajax_helpers.mixins import AjaxHelpers
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
-from ajax_helpers.utils import random_string, ajax_command
+from ajax_helpers.utils import random_string, ajax_command, is_ajax
 from django.conf import settings
 
 
@@ -138,7 +138,7 @@ class MenuItem(BaseMenuItem):
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
-                 dropdown_kwargs=None, tooltip=None, **kwargs):
+                 dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, **kwargs):
         super().__init__(**kwargs)
         self._resolved_url = None
         self.link_type = link_type
@@ -176,7 +176,7 @@ class MenuItem(BaseMenuItem):
         if dropdown:
             if dropdown_kwargs is None:
                 dropdown_kwargs = {}
-            self.dropdown = HtmlMenu(template='dropdown',
+            self.dropdown = HtmlMenu(template=dropdown_template,
                                      no_hover=no_hover, placement=placement, **dropdown_kwargs).add_items(*dropdown)
         else:
             self.dropdown = None
@@ -441,7 +441,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
 
     def get(self, request, *args, **kwargs):
         self.set_response_commands()
-        if request.is_ajax():
+        if is_ajax(request):
             return self.tab_response()
         return super().get(request, *args, **kwargs)
 
@@ -463,7 +463,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if not self.request.is_ajax():
+        if not is_ajax(self.request):
             context.update(self.main_context())
         context.update(self.tab_context())
         for c in self.ajax_response_commands:
