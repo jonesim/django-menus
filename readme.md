@@ -1,4 +1,4 @@
-[![PyPI version](https://badge.fury.io/py/django-modal-2fa.svg)](https://badge.fury.io/py/django-modal-2fa)
+[![PyPI version](https://badge.fury.io/py/django-tab-menus.svg)](https://badge.fury.io/py/django-tab-menus)
 
 Django app to render menus and load tabs with Ajax
 
