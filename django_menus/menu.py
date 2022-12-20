@@ -147,7 +147,7 @@ class MenuItem(BaseMenuItem):
             if url_args is None and len(split_url) > 1:
                 url_args = split_url[1:]
                 url = split_url[0]
-        self._href = self.raw_href(url, url_args, url_kwargs)
+        self._href = self.raw_href(url, url_args, url_kwargs, **kwargs)
         self._attributes = self.attr(attributes, tooltip)
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
@@ -251,7 +251,19 @@ class MenuItem(BaseMenuItem):
             self.template = 'django_menus/single_button.html'
         return render_to_string(self.template, dict(**{'menu_item': self}, **self.kwargs))
 
-    def raw_href(self, name_url, url_args, url_kwargs):
+    @staticmethod
+    def get_additional_url_kwargs(url_kwargs, **kwargs):
+        for key, value in kwargs.items():
+            if key.startswith('url_'):
+                code = key[4:]
+                if url_kwargs is None:
+                    url_kwargs = {code: value}
+                else:
+                    url_kwargs[code] = value
+        return url_kwargs
+
+    def raw_href(self, name_url, url_args, url_kwargs, **kwargs):
+        url_kwargs = self.get_additional_url_kwargs(url_kwargs, **kwargs)
         if not name_url:
             return 'javascript:void(0)'
         elif self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:

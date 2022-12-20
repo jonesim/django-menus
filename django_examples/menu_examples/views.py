@@ -1,14 +1,15 @@
 import datetime
 
-from django_modals.modals import Modal
-from django_modals.helper import base64_json
-from show_src_code.modals import BaseSourceCodeModal
-from menu_examples.globals import DUMMY_MENU_ID
-from django_menus.menu import MenuItem, DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
-    MenuItemDisplay
 from django.utils.safestring import mark_safe
+from django_modals.helper import base64_json
+from django_modals.modals import Modal
+from menu_examples.globals import DUMMY_MENU_ID
+from show_src_code.modals import BaseSourceCodeModal
 from show_src_code.view_mixins import DemoViewMixin
-from django_menus.menu import MenuMixin, MenuItem
+
+from django_menus.menu import DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
+    MenuItemDisplay
+from django_menus.menu import MenuItem
 
 
 def setup_main_menu(request):
@@ -101,6 +102,8 @@ class View1(MainMenu):
             ('view1', 'Simple URL name'),
             ('int_path', 'Path with url args', {'url_args': [1]}),
             ('int_path', 'Path with url kwargs', {'url_kwargs': {'int': 2}}),
+            ('int_path', 'Path with url_(name)', {'url_int': 3}),
+            MenuItem('int_path', 'Path with menu item url_(name)', url_int=4),
             ('/view1/#123', 'Raw URL', MenuItem.HREF),
             ("ajax_helpers.post_json({'data': {'button': 'delete'}, 'url': '/modal/company/52/'})", 'Raw URL',
              MenuItem.HREF),
