@@ -132,7 +132,7 @@ class View1(MainMenu):
         )
 
     def tab_menu(self):
-        self.add_menu('tab_menu', 'tabs').add_items('view1', 'view2', 'view3', 'view4')
+        self.add_menu('tab_menu', 'tabs').add_items(('view1', {'key': 'a'}), MenuItem('view2', key=['alt-b', 'alt-B'], menu_display='View 2 (ALT b or B)'), 'view3', 'view4')
 
     def dropdowns(self):
         self.add_menu('dropdown').add_items(
@@ -220,7 +220,7 @@ class ModalExamples(MainMenu):
     def setup_menu(self):
         super().setup_menu()
         self.add_menu('modals', 'buttons').add_items(
-            ('test_modal', 'Simple Modal'),
+            ('test_modal', 'Simple Modal F2', {'key': 'F2'}),
             ('test_modal,XYZ', 'Modal with simple string slug'),
             ('test_modal,key-XYZ', 'Modal with string slug'),
             ('test_modal', 'Modal with url_args (pk) slug', {'url_args': ('ABC',)}),

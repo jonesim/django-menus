@@ -1,0 +1,11 @@
+<script>
+    document.onkeydown = function (e) {
+        if (django_modal === undefined || django_modal.active_modal_container_id() === "modal-0") {
+            var key_dict = {{ key_dict|safe }};
+            if (key_dict[e.key] != undefined && key_dict[e.key].alt == e.altKey && key_dict[e.key].shift == e.shiftKey) {
+                e.preventDefault();
+                click_href(key_dict[e.key].href);
+            }
+        }
+    };
+</script>

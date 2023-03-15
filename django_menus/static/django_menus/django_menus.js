@@ -77,3 +77,12 @@ var dropdown_menu_click = function dropdown_menu_click(reference) {
             }
     })
 }
+
+function click_href(href) {
+    var a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = href;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}

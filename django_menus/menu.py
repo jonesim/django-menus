@@ -138,10 +138,11 @@ class MenuItem(BaseMenuItem):
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
-                 dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, **kwargs):
+                 dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, **kwargs):
         super().__init__(**kwargs)
         self._resolved_url = None
         self.link_type = link_type
+        self.key = key
         if self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
             split_url = url.split(',') if url else [None]
             if url_args is None and len(split_url) > 1:
@@ -304,6 +305,8 @@ class MenuItem(BaseMenuItem):
 
 class HtmlMenu:
 
+    key_press_template = 'django_menus/menu_key_press.html'
+
     templates = {
         'base': 'django_menus/main_menu.html',
         'tabs': 'django_menus/tab_menu.html',
@@ -364,11 +367,26 @@ class HtmlMenu:
         else:
             self.id = random_string()
         extra_menus = ''
+        key_dict = {}
         for i in self.menu_items:
             if hasattr(i, 'dropdown') and i.dropdown:
                 # noinspection PyUnresolvedReferences
                 extra_menus += i.dropdown.render()
-        return mark_safe(render_to_string(self.template, context={'menu': self}) + extra_menus)
+            if getattr(i, 'key', None):
+                key_list = [i.key] if isinstance(i.key, str) else i.key
+                for key in key_list:
+                    key_data = {'shift': False, 'alt': False, 'href': i.href()}
+                    for k in key.split('-'):
+                        if k.lower() == 'shift':
+                            key_data['shift'] = True
+                        elif k.lower() == 'alt':
+                            key_data['alt'] = True
+                        else:
+                            key_data['key'] = k
+                    key_dict[key_data['key']] = key_data
+        keyboard = render_to_string(self.key_press_template,
+                                    context={'key_dict': json.dumps(key_dict)}) if key_dict else ''
+        return mark_safe(render_to_string(self.template, context={'menu': self}) + extra_menus + keyboard)
 
 
 class MenuMixin:
