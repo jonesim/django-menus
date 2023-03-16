@@ -2,7 +2,13 @@
     document.onkeydown = function (e) {
         if (django_modal === undefined || django_modal.active_modal_container_id() === "modal-0") {
             var key_dict = {{ key_dict|safe }};
-            if (key_dict[e.key] != undefined && key_dict[e.key].alt == e.altKey && key_dict[e.key].shift == e.shiftKey) {
+            var is_mac = false;
+            try {
+                var platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown';
+                is_mac = platform.toLowerCase().indexOf('mac') > -1;
+            }
+            catch(err) {}
+            if (key_dict[e.key] != undefined && key_dict[e.key].shift == e.shiftKey  && ((!is_mac && key_dict[e.key].alt == e.altKey) || (is_mac && key_dict[e.key].alt == e.ctrlKey))) {
                 e.preventDefault();
                 click_href(key_dict[e.key].href);
             }
