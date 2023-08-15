@@ -164,6 +164,8 @@ class MenuItem(BaseMenuItem):
                 else:
                     # noinspection PyTypeChecker
                     self.menu_config: dict = view_class.menu_config
+            if hasattr(view_class, 'view_permission') and self.menu:
+                self.visible = view_class.view_permission(self.menu.request)
         if isinstance(menu_display, MenuItemDisplay):
             self.menu_display = menu_display
         else:
