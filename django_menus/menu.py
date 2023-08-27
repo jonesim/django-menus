@@ -119,7 +119,7 @@ class MenuItem(BaseMenuItem):
             if self.link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
                 view_class = getattr(self.resolved_url.func, 'view_class', None)
                 if hasattr(view_class, 'view_permission'):
-                    self.visible = view_class.view_permission(request)
+                    self.visible = view_class.view_permission(request, self)
             else:
                 view_class = getattr(request.resolver_match.func, 'view_class', None)
                 if hasattr(view_class, 'menu_permissions'):
