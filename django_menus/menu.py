@@ -48,6 +48,9 @@ class BaseMenuItem:
     def menu(self, menu):
         self._menu = menu
 
+    def test_visible(self, request):
+        return True
+
 
 class DividerItem(BaseMenuItem):
 
@@ -111,6 +114,18 @@ class MenuItem(BaseMenuItem):
                              URL_NAME,
                              HREF]
 
+    def test_visible(self, request):
+        if self.visible:
+            if self.link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
+                view_class = getattr(self.resolved_url.func, 'view_class', None)
+                if hasattr(view_class, 'view_permission'):
+                    self.visible = view_class.view_permission(request)
+            else:
+                view_class = getattr(request.resolver_match.func, 'view_class', None)
+                if hasattr(view_class, 'menu_permissions'):
+                    self.visible = view_class.menu_permissions(request, self)
+        return self.visible
+
     @property
     def menu(self):
         return self._menu
@@ -138,11 +153,13 @@ class MenuItem(BaseMenuItem):
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
-                 dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, **kwargs):
+                 dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
+                 **kwargs):
         super().__init__(**kwargs)
         self._resolved_url = None
         self.link_type = link_type
         self.key = key
+        self.permission_name = permission_name if permission_name else url
         if self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
             split_url = url.split(',') if url else [None]
             if url_args is None and len(split_url) > 1:
@@ -164,8 +181,6 @@ class MenuItem(BaseMenuItem):
                 else:
                     # noinspection PyTypeChecker
                     self.menu_config: dict = view_class.menu_config
-            if self.visible and hasattr(view_class, 'view_permission') and self.menu:
-                self.visible = view_class.view_permission(self.menu.request)
         if isinstance(menu_display, MenuItemDisplay):
             self.menu_display = menu_display
         else:
@@ -370,10 +385,17 @@ class HtmlMenu:
             self.id = random_string()
         extra_menus = ''
         key_dict = {}
+        no_items = True
         for i in self.menu_items:
+            if not i.test_visible(self.request):
+                continue
             if hasattr(i, 'dropdown') and i.dropdown:
                 # noinspection PyUnresolvedReferences
-                extra_menus += i.dropdown.render()
+                i.dropdown.request = self.request
+                extra_menu = i.dropdown.render()
+                if not extra_menu:
+                    i.visible = False
+                extra_menus += extra_menu
             if getattr(i, 'key', None):
                 key_list = [i.key] if isinstance(i.key, str) else i.key
                 for key in key_list:
@@ -386,6 +408,9 @@ class HtmlMenu:
                         else:
                             key_data['key'] = k
                     key_dict[key_data['key']] = key_data
+            no_items = False
+        if no_items:
+            return ''
         keyboard = render_to_string(self.key_press_template,
                                     context={'key_dict': json.dumps(key_dict)}) if key_dict else ''
         return mark_safe(render_to_string(self.template, context={'menu': self}) + extra_menus + keyboard)
