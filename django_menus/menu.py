@@ -120,7 +120,7 @@ class MenuItem(BaseMenuItem):
                 view_class = getattr(self.resolved_url.func, 'view_class', None)
                 if hasattr(view_class, 'view_permission'):
                     self.visible = view_class.view_permission(request, self)
-            else:
+            elif request and request.resolver_match:
                 view_class = getattr(request.resolver_match.func, 'view_class', None)
                 if hasattr(view_class, 'menu_permissions'):
                     self.visible = view_class.menu_permissions(request, self)
@@ -139,6 +139,12 @@ class MenuItem(BaseMenuItem):
                 self.menu_display = MenuItemDisplay(self.menu_display)
         if self.dropdown:
             self.dropdown.menu = menu
+
+
+        if self.link_type == self.AJAX_BUTTON:
+            print('f')
+            #self.visible = view_class.view_permission(self.menu.request)
+
 
     def css(self):
         return ' '.join(self.menu_display.css_classes + (['disabled'] if self.disabled else []))
