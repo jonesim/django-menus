@@ -140,12 +140,6 @@ class MenuItem(BaseMenuItem):
         if self.dropdown:
             self.dropdown.menu = menu
 
-
-        if self.link_type == self.AJAX_BUTTON:
-            print('f')
-            #self.visible = view_class.view_permission(self.menu.request)
-
-
     def css(self):
         return ' '.join(self.menu_display.css_classes + (['disabled'] if self.disabled else []))
 
