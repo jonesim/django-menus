@@ -10,6 +10,7 @@ from show_src_code.view_mixins import DemoViewMixin
 from django_menus.menu import DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
     MenuItemDisplay
 from django_menus.menu import MenuItem
+from django_menus.menu.context_menu import ContextMenuMixin
 
 
 def setup_main_menu(request):
@@ -17,6 +18,7 @@ def setup_main_menu(request):
         'view1',
         ('ajaxtab', 'Ajax Tabs', ),
         ('modal_examples', 'Modal Examples'),
+        ('context_examples', 'Context Examples'),
     )
     return menu
 
@@ -230,6 +232,22 @@ class ModalExamples(MainMenu):
             ('test_modal64', 'base64 params as dict', {'url_args': (base64_json({'key-X': 'value'}),)}),
 
         )
+
+
+class ContextMenu(ContextMenuMixin, MainMenu):
+    template_name = 'menu_examples/context_examples.html'
+
+    def ajax_context_menu(self, *args, **kwargs):
+        return self.add_context_menu('view1', 'view2', 'view3', ('view4', 'View 4'))
+
+    def ajax_special_context_menu(self, *args, **kwargs):
+        return self.add_context_menu('view1',
+                                     'view2',
+                                     'view3',
+                                     ('test_button', 'Send to View', MenuItem.AJAX_BUTTON))
+
+    def button_test_button(self, *args, **kwargs):
+        return self.command_response('message', text='From view')
 
 
 class TestModal(Modal):
