@@ -90,7 +90,7 @@ function click_href(href) {
 
 
 ajax_helpers.command_functions.enable_context_menu = function (command) {
-    $(document).on("contextmenu", ".context_menu", function (evt) {
+    $(document).on("contextmenu", command.selector, function (evt) {
         evt.preventDefault();
 
         // Create a dictionary (object) to store data attributes and id
