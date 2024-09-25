@@ -3,6 +3,7 @@ import datetime
 from django.utils.safestring import mark_safe
 from django_modals.helper import base64_json
 from django_modals.modals import Modal
+from menu_examples.globals import DUMMY_MENU_ID
 from show_src_code.modals import BaseSourceCodeModal
 from show_src_code.view_mixins import DemoViewMixin
 
@@ -10,7 +11,6 @@ from django_menus.menu import DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxM
     MenuItemDisplay
 from django_menus.menu import MenuItem
 from django_menus.menu.context_menu import ContextMenuMixin
-from menu_examples.globals import DUMMY_MENU_ID
 
 
 def setup_main_menu(request):
