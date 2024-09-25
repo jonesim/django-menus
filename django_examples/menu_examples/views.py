@@ -3,6 +3,8 @@ import datetime
 from django.utils.safestring import mark_safe
 from django_modals.helper import base64_json
 from django_modals.modals import Modal
+
+from django_menus.menu.menu import AjaxMenuDropDownItem
 from menu_examples.globals import DUMMY_MENU_ID
 from show_src_code.modals import BaseSourceCodeModal
 from show_src_code.view_mixins import DemoViewMixin
@@ -258,13 +260,6 @@ class TestModal(Modal):
         return f'Slug {self.slug.__str__()}'
 
 
-class AjaxMenuDropDownItem(MenuItem):
-    def __init__(self, *args, value=None, dropdown_view_name='dropdown_menu', menu_display='', template='django_menus/ajax_dropdown.html', **kwargs):
-        self.value = value
-        self.dropdown_view_name = dropdown_view_name
-        super().__init__(*args, menu_display=menu_display, template=template, **kwargs)
-
-
 class AjaxDropDownMenu(MainMenu):
     template_name = 'menu_examples/ajax_dropdown_menu_examples.html'
 
@@ -272,12 +267,6 @@ class AjaxDropDownMenu(MainMenu):
         super().setup_menu()
         self.add_menu('menu_items', 'button_group').add_items(
             'string', AjaxMenuDropDownItem(css_classes='btn-success'))
-
-    def ajax_context_menu(self, *args, **kwargs):
-        return self.add_context_menu('view1', 'view2', 'view3', ('view4', 'View 4'))
-
-    def button_test_button(self, *args, **kwargs):
-        return self.command_response('message', text='From view')
 
     def ajax_dropdown_menu(self, *args, pos, **kwargs):
         return self.add_ajax_dropdown_menu('view1', 'view2', 'view3', ('view4', 'View 4'), pos=pos)

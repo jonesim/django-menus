@@ -150,3 +150,10 @@ class AjaxMenuTemplateView(AjaxHelpers, MenuTemplateView):
         for m in self.menus.values():
             self.response_commands += m.badge_ajax()
         return self.command_response()
+
+
+class AjaxMenuDropDownItem(MenuItem):
+    def __init__(self, *args, value=None, dropdown_view_name='dropdown_menu', menu_display='', template='django_menus/ajax_dropdown.html', **kwargs):
+        self.value = value
+        self.dropdown_view_name = dropdown_view_name
+        super().__init__(*args, menu_display=menu_display, template=template, **kwargs)
