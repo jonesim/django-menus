@@ -21,7 +21,7 @@ class HtmlMenu:
         'breadcrumb': 'django_menus/breadcrumb.html',
         'dropdown': 'django_menus/dropdown.html',
         'buttons': 'django_menus/button_menu.html',
-        'context': 'django_menus/context_menu.html'
+        'context': 'django_menus/context_menu.html',
     }
 
     def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
