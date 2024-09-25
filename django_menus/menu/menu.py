@@ -21,7 +21,7 @@ class HtmlMenu:
         'breadcrumb': 'django_menus/breadcrumb.html',
         'dropdown': 'django_menus/dropdown.html',
         'buttons': 'django_menus/button_menu.html',
-        'context': 'django_menus/context_menu.html',
+        'context': 'django_menus/context_menu.html'
     }
 
     def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
@@ -129,6 +129,10 @@ class MenuMixin:
 
     def setup_menu(self):
         return
+
+    def add_ajax_dropdown_menu(self, *args,  pos, template='context'):
+        menu = HtmlMenu(self.request, template=template).add_items(*args)
+        return self.command_response('context_menu', menu=menu.render(), pos=pos)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

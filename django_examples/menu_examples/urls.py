@@ -21,6 +21,7 @@ urlpatterns = [
 
     path('modals/', views.ModalExamples.as_view(), name='modal_examples'),
     path('context/', views.ContextMenu.as_view(), name='context_examples'),
+    path('ajax-dropdownmenu/', views.AjaxDropDownMenu.as_view(), name='ajax_dropdown_menu_examples'),
     path('modal/', views.TestModal.as_view(), name='test_modal'),
     path('modal/<str:slug>', views.TestModal.as_view(), name='test_modal'),
     path('modal64/<str:base64>', views.TestModal.as_view(), name='test_modal64'),

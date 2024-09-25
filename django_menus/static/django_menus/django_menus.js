@@ -130,9 +130,16 @@ ajax_helpers.command_functions.context_menu = function (command) {
     var menuHeight = menu.outerHeight();
 
     // Calculate the position
-    var positionX = ajax_helpers.event.pageX;
-    var positionY = ajax_helpers.event.pageY;
+    var positionX = 0;
+    var positionY = 0;
 
+    if (command.pos === undefined) {
+        positionX = ajax_helpers.event.pageX;
+        positionY = ajax_helpers.event.pageY;
+    } else {
+        positionX = command.pos[0];
+        positionY = command.pos[1];
+    }
     // Adjust position to prevent overflow on the right
     if (positionX + menuWidth > windowWidth) {
         positionX = windowWidth - menuWidth;
@@ -165,3 +172,22 @@ ajax_helpers.command_functions.context_menu = function (command) {
     });
 
 };
+
+function get_ajax_dropdown_menu(button, dropdownViewName, value) {
+    // Get the bounding rectangle of the button
+    const rect = button.getBoundingClientRect();
+
+    // Calculate the x and y coordinates for the bottom-left corner
+    const x = rect.left; // X coordinate (horizontal position from the left)
+    const y = rect.bottom; // Y coordinate (vertical position from the top of the viewport)
+
+    // Prepare data to send
+    const data = {
+        ajax: dropdownViewName,
+        value: value,
+        pos: [x, y] // Send the x and y coordinates
+    };
+
+    // Call the post_json function with the new data
+    ajax_helpers.post_json({'data': data});
+}

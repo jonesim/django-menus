@@ -1,0 +1,8 @@
+{% spaceless %}
+<a href="javascript:void(0);"
+   class="btn {{ menu_item.css|default:'btn-primary' }}{% if menu_item.active %} active{% endif %}"
+   {{ menu_item.attributes }}
+   onclick="get_ajax_dropdown_menu(this, '{{ menu_item.dropdown_view_name }}', '{{ menu_item.value }}')">
+   <span class="dropdown-toggle">{{ menu_item.name }}</span>
+</a>
+{% endspaceless %}
