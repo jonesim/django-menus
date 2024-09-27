@@ -130,6 +130,10 @@ class MenuMixin:
     def setup_menu(self):
         return
 
+    def add_ajax_dropdown_menu(self, *args,  pos, template='context'):
+        menu = HtmlMenu(self.request, template=template).add_items(*args)
+        return self.command_response('context_menu', menu=menu.render(), pos=pos)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.menus = {}
@@ -146,3 +150,10 @@ class AjaxMenuTemplateView(AjaxHelpers, MenuTemplateView):
         for m in self.menus.values():
             self.response_commands += m.badge_ajax()
         return self.command_response()
+
+
+class AjaxMenuDropDownItem(MenuItem):
+    def __init__(self, *args, value=None, dropdown_view_name='dropdown_menu', menu_display='', template='django_menus/ajax_dropdown.html', **kwargs):
+        self.value = value
+        self.dropdown_view_name = dropdown_view_name
+        super().__init__(*args, menu_display=menu_display, template=template, **kwargs)

@@ -3,6 +3,8 @@ import datetime
 from django.utils.safestring import mark_safe
 from django_modals.helper import base64_json
 from django_modals.modals import Modal
+
+from django_menus.menu.menu import AjaxMenuDropDownItem
 from menu_examples.globals import DUMMY_MENU_ID
 from show_src_code.modals import BaseSourceCodeModal
 from show_src_code.view_mixins import DemoViewMixin
@@ -19,6 +21,7 @@ def setup_main_menu(request):
         ('ajaxtab', 'Ajax Tabs', ),
         ('modal_examples', 'Modal Examples'),
         ('context_examples', 'Context Examples'),
+        ('ajax_dropdown_menu_examples', 'Ajax-DropDown Menu Examples'),
     )
     return menu
 
@@ -255,3 +258,15 @@ class TestModal(Modal):
 
     def modal_content(self):
         return f'Slug {self.slug.__str__()}'
+
+
+class AjaxDropDownMenu(MainMenu):
+    template_name = 'menu_examples/ajax_dropdown_menu_examples.html'
+
+    def setup_menu(self):
+        super().setup_menu()
+        self.add_menu('menu_items', 'button_group').add_items(
+            'string', AjaxMenuDropDownItem(css_classes='btn-success'))
+
+    def ajax_dropdown_menu(self, *args, pos, **kwargs):
+        return self.add_ajax_dropdown_menu('view1', 'view2', 'view3', ('view4', 'View 4'), pos=pos)
