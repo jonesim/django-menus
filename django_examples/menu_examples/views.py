@@ -102,13 +102,19 @@ class View1(MainMenu):
             MenuItem('admin:index')
         )
 
+    @staticmethod
+    def demo_badge(badge):
+        badge.text = datetime.datetime.now().strftime('%S')
+        badge.css_class = 'warning'
+
     def menu_links(self):
         self.add_menu('link_examples', 'button_group').add_items(
             ('view1', 'Simple URL name'),
             ('int_path', 'Path with url args', {'url_args': [1]}),
             ('int_path', 'Path with url kwargs', {'url_kwargs': {'int': 2}}),
             ('int_path', 'Path with url_(name)', {'url_int': 3}),
-            MenuItem('int_path', 'Path with menu item url_(name)', url_int=4),
+            MenuItem('int_path', 'Path with menu item url_(name)', url_int=4, badge=MenuItemBadge('demo-badge',
+                                                                                         self.demo_badge)),
             ('/view1/#123', 'Raw URL', MenuItem.HREF),
             ("ajax_helpers.post_json({'data': {'button': 'delete'}, 'url': '/modal/company/52/'})", 'Raw URL',
              MenuItem.HREF),
@@ -241,13 +247,21 @@ class ContextMenu(ContextMenuMixin, MainMenu):
     template_name = 'menu_examples/context_examples.html'
 
     def ajax_context_menu(self, *args, **kwargs):
-        return self.add_context_menu('view1', 'view2', 'view3', ('view4', 'View 4'))
+        return self.add_context_menu('view1', 'view2', 'view3', ('view4', 'View 4'),
+                                     MenuItem(menu_display='dropdown ',
+                                              dropdown=('view1', 'view2', 'view3', DividerItem(), 'view4'),
+                                              show_caret=True,
+                                              placement='right-start',
+                                              ),
+                                     'view3'
+                                     )
 
     def ajax_special_context_menu(self, *args, **kwargs):
         return self.add_context_menu('view1',
                                      'view2',
                                      'view3',
-                                     ('test_button', 'Send to View', MenuItem.AJAX_BUTTON))
+
+                                    ('test_button', 'Send to View', MenuItem.AJAX_BUTTON))
 
     def button_test_button(self, *args, **kwargs):
         return self.command_response('message', text='From view')

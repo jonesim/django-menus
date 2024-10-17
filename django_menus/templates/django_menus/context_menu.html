@@ -2,7 +2,9 @@
 <div id='context-menu' class="dropdown-menu" role="menu">
     {% for i in menu.visible_items %}
         {% if i.default_render %}
-            <a class="dropdown-item {{ i.css }}" href="{{ i.href }}" {{ i.attributes }}>{{ i.name }}</a>
+            <a class="dropdown-item {{ i.css }}" id="{{ i.dropdown.id }}" href="{{ i.href }}" {{ i.attributes }}>
+            {{ i.name }}{{ i.badge }}{% if i.dropdown and i.show_caret %}<i class="fas fa-caret-right pt-1 float-right"></i>{% endif %}
+            </a>
         {% else %}
             {{ i.render }}
         {% endif %}
