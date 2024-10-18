@@ -13,6 +13,7 @@ from django_menus.menu import DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxM
     MenuItemDisplay
 from django_menus.menu import MenuItem
 from django_menus.menu.context_menu import ContextMenuMixin
+from django_menus.menu.menu_items import HeaderItem
 
 
 def setup_main_menu(request):
@@ -247,7 +248,8 @@ class ContextMenu(ContextMenuMixin, MainMenu):
     template_name = 'menu_examples/context_examples.html'
 
     def ajax_context_menu(self, *args, **kwargs):
-        return self.add_context_menu('view1', 'view2', 'view3', ('view4', 'View 4'),
+        return self.add_context_menu(HeaderItem('Context Menu'),
+                                     'view1', 'view2', 'view3', ('view4', 'View 4'),
                                      MenuItem(menu_display='dropdown ',
                                               dropdown=('view1', 'view2', 'view3', DividerItem(), 'view4'),
                                               show_caret=True,

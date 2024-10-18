@@ -81,6 +81,17 @@ class DividerItem(BaseMenuItem):
         return mark_safe('<div class="dropdown-divider"></div>')
 
 
+class HeaderItem(BaseMenuItem):
+    default_render = False
+
+    def __init__(self, text=None, **kwargs):
+        self.text = text
+        super().__init__(**kwargs)
+
+    def render(self):
+        return mark_safe(f'<div class="dropdown-header">{self.text}</div>')
+
+
 class MenuItemDisplay:
     def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None):
         self._css_classes = None
