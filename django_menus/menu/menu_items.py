@@ -1,5 +1,5 @@
 import json
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from django.template.loader import render_to_string
@@ -185,8 +185,9 @@ class MenuItem(BaseMenuItem):
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
-                 **kwargs):
+                 query_string_params=None, **kwargs):
         super().__init__(**kwargs, badge=badge)
+        self.query_string_params = query_string_params
         self._resolved_url = None
         self.link_type = link_type
         self.key = key
@@ -306,7 +307,13 @@ class MenuItem(BaseMenuItem):
         if not name_url:
             return 'javascript:void(0)'
         elif self.link_type in [self.URL_NAME, self.AJAX_GET_URL_NAME]:
-            return reverse(name_url, args=url_args if url_args else [], kwargs=url_kwargs if url_kwargs else {})
+            url = reverse(name_url, args=url_args if url_args else [], kwargs=url_kwargs if url_kwargs else {})
+            if self.query_string_params is not None:
+                if isinstance(self.query_string_params, dict):
+                    url += '?' + urlencode(self.query_string_params)
+                else:
+                    url += self.query_string_params
+            return url
         elif self.link_type == self.AJAX_BUTTON:
             button = button_javascript(name_url).replace('"', "'")
             return f"javascript:{button}"

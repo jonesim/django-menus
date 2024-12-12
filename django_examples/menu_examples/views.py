@@ -181,7 +181,9 @@ class View1(MainMenu):
                                )))
 
         self.add_menu('attr', 'button_group').add_items(
-            MenuItem('view1', 'Look at link', attributes={'data-toggle': 'hello_world', 'data-target': 'this_world'})
+            MenuItem('view1', 'Look at link',
+                     attributes={'data-toggle': 'hello_world', 'data-target': 'this_world'},
+                     query_string_params={'qs': 'foo', 'bar': 'baz'}),
         )
 
     @staticmethod
