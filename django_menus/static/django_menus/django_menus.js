@@ -121,9 +121,14 @@ ajax_helpers.command_functions.context_menu = function (command) {
         return;
     }
 
-    // Get the window dimensions
+    // Get the viewport bounds in document coordinates. Context-menu events already
+    // provide page coordinates, and AJAX dropdowns send document coordinates below.
     var windowWidth = $(window).width();
     var windowHeight = $(window).height();
+    var viewportLeft = $(window).scrollLeft();
+    var viewportTop = $(window).scrollTop();
+    var viewportRight = viewportLeft + windowWidth;
+    var viewportBottom = viewportTop + windowHeight;
 
     // Get the menu dimensions
     var menuWidth = menu.outerWidth();
@@ -132,6 +137,7 @@ ajax_helpers.command_functions.context_menu = function (command) {
     // Calculate the position
     var positionX = 0;
     var positionY = 0;
+    var anchorTop;
 
     if (command.pos === undefined) {
         positionX = ajax_helpers.event.pageX;
@@ -139,16 +145,37 @@ ajax_helpers.command_functions.context_menu = function (command) {
     } else {
         positionX = command.pos[0];
         positionY = command.pos[1];
-    }
-    // Adjust position to prevent overflow on the right
-    if (positionX + menuWidth > windowWidth) {
-        positionX = windowWidth - menuWidth;
+        anchorTop = command.pos[2];
     }
 
-    // Adjust position to prevent overflow on the bottom
-    if (positionY + menuHeight > windowHeight) {
-        positionY = windowHeight - menuHeight;
+    // Keep oversized menus usable rather than allowing them to extend beyond both
+    // edges of the viewport.
+    var viewportPadding = 8;
+    if (menuHeight > windowHeight - (viewportPadding * 2)) {
+        menu.css({
+            'max-height': (windowHeight - (viewportPadding * 2)) + 'px',
+            'overflow-y': 'auto'
+        });
+        menuHeight = menu.outerHeight();
     }
+
+    // Adjust position to prevent overflow on the right
+    if (positionX + menuWidth + viewportPadding > viewportRight) {
+        positionX = viewportRight - menuWidth - viewportPadding;
+    }
+    positionX = Math.max(viewportLeft + viewportPadding, positionX);
+
+    // AJAX dropdowns include the top of their anchor button. Flip those menus
+    // directly above the button when they do not fit below it; pointer context
+    // menus retain the existing viewport-edge fallback.
+    if (positionY + menuHeight + viewportPadding > viewportBottom) {
+        if (anchorTop !== undefined && anchorTop - menuHeight - viewportPadding >= viewportTop) {
+            positionY = anchorTop - menuHeight;
+        } else {
+            positionY = viewportBottom - menuHeight - viewportPadding;
+        }
+    }
+    positionY = Math.max(viewportTop + viewportPadding, positionY);
 
     // Position the menu at the adjusted coordinates
     menu.css({
@@ -177,15 +204,19 @@ function get_ajax_dropdown_menu(button, dropdownViewName, value) {
     // Get the bounding rectangle of the button
     const rect = button.getBoundingClientRect();
 
-    // Calculate the x and y coordinates for the bottom-left corner
-    const x = rect.left; // X coordinate (horizontal position from the left)
-    const y = rect.bottom; // Y coordinate (vertical position from the top of the viewport)
+    // Convert the viewport-relative rectangle to document coordinates so it uses
+    // the same coordinate system as the absolutely positioned context menu.
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    const x = rect.left + scrollX;
+    const y = rect.bottom + scrollY;
+    const top = rect.top + scrollY;
 
     // Prepare data to send
     const data = {
         ajax: dropdownViewName,
         value: value,
-        pos: [x, y] // Send the x and y coordinates
+        pos: [x, y, top]
     };
 
     // Call the post_json function with the new data
