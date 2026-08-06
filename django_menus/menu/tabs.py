@@ -5,7 +5,7 @@ from ajax_helpers.utils import ajax_command, is_ajax
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
-from django_menus.menu import AjaxMenuTemplateView
+from .menu import AjaxMenuTemplateView
 
 
 class AjaxMenuTabs(AjaxMenuTemplateView):

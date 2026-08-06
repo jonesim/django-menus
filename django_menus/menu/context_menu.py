@@ -1,4 +1,4 @@
-from django_menus.menu import HtmlMenu
+from .menu import HtmlMenu
 
 
 # noinspection PyUnresolvedReferences

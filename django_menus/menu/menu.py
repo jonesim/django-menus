@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.views.generic import TemplateView, View
 
-from django_menus.menu import MenuItem, BaseMenuItem
+from .menu_items import MenuItem, BaseMenuItem
 
 
 class HtmlMenu:
