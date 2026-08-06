@@ -27,7 +27,7 @@ class HtmlMenu:
     def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
                  placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False):
         self.menu_items = []
-        self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
+        self.button_defaults = dict(getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {}))
         if button_defaults is not None:
             self.button_defaults.update(button_defaults)
 
@@ -56,8 +56,8 @@ class HtmlMenu:
                 self.menu_items.append(a)
             elif isinstance(a, View):
                 self.add_item(a.request.path, getattr(a, 'menu_display', None), MenuItem.HREF)
-            elif type(a) == tuple:
-                if type(a[-1]) == dict:
+            elif isinstance(a, (tuple, list)):
+                if isinstance(a[-1], dict):
                     self.add_item(*a[:-1], **a[-1])
                 else:
                     self.add_item(*a)
@@ -67,7 +67,7 @@ class HtmlMenu:
 
     def badge_ajax(self):
         return [{'function': 'html', 'selector': '#' + i.badge.id, 'html': i.badge.badge_html()}
-                for i in self.menu_items if i.has_badge]
+                for i in self.menu_items if i.has_badge and i.badge.id]
 
     def render(self):
         if self.fixed_id:
@@ -98,7 +98,8 @@ class HtmlMenu:
                             key_data['alt'] = True
                         else:
                             key_data['key'] = k
-                    key_dict[key_data['key']] = key_data
+                    if 'key' in key_data:
+                        key_dict[key_data['key']] = key_data
             no_items = False
         if no_items:
             return ''
@@ -119,7 +120,7 @@ class MenuMixin:
 
     def get_context_data(self, **kwargs):
         self.setup_menu()
-        super_context = getattr(super(), 'get_context_data')
+        super_context = getattr(super(), 'get_context_data', None)
         if super_context and callable(super_context):
             context = super_context(**kwargs)
         else:

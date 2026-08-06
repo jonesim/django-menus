@@ -53,8 +53,7 @@ class BaseMenuItem:
 
     @property
     def has_badge(self):
-        if self._badge is not None:
-            return True
+        return self._badge is not None
 
     def test_visible(self, request):
         return True
@@ -176,7 +175,7 @@ class MenuItem(BaseMenuItem):
 
     @staticmethod
     def attr(attributes, tooltip):
-        attributes = {} if attributes is None else attributes
+        attributes = {} if attributes is None else dict(attributes)
         if tooltip:
             attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
         return attributes
