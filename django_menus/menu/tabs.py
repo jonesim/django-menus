@@ -43,7 +43,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
         context = self.get_context_data(**self.kwargs)
         self.create_ajax_commands(context)
         response = self.command_response()
-        response['Cache-Control'] = 'No-Cache,No-Store'
+        response['Cache-Control'] = 'no-cache, no-store'
         return response
 
     def get(self, request, *args, **kwargs):
@@ -69,6 +69,7 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
         return context
 
     def get_context_data(self, **kwargs):
+        self.set_response_commands()
         context = super().get_context_data(**kwargs)
         if not is_ajax(self.request):
             context.update(self.main_context())
