@@ -1,7 +1,12 @@
 <script>
-    document.onkeydown = function (e) {
-        if (django_modal === undefined || django_modal.active_modal_container_id() === "modal-0") {
-            var key_dict = {{ key_dict|safe }};
+    window.django_menu_key_dict = Object.assign(window.django_menu_key_dict || {}, {{ key_dict|safe }});
+    if (!window.django_menu_key_listener) {
+        window.django_menu_key_listener = true;
+        document.addEventListener('keydown', function (e) {
+            if (typeof django_modal !== 'undefined' && django_modal.active_modal_container_id() !== "modal-0") {
+                return;
+            }
+            var key_dict = window.django_menu_key_dict;
             var is_mac = false;
             try {
                 var platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown';
@@ -12,6 +17,6 @@
                 e.preventDefault();
                 click_href(key_dict[e.key].href);
             }
-        }
-    };
+        });
+    }
 </script>
