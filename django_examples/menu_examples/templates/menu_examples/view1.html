@@ -99,6 +99,20 @@
         {% show_src_code 'source_code' 'dropdowns' %}
     </div>
 
+    <h4 class="m-3">Registry</h4>
+    <p class="m-3">
+        These dropdowns are not listed anywhere - each view declares its own place with a
+        <code>menu_entry</code>. 'Registry Examples' is sorted alphabetically; 'Registry Reports' is
+        grouped, with the dividers and the 'Stock' header inserted automatically. Run
+        <code>./manage.py show_menu</code> to see the same tree on the command line.
+    </p>
+    <div class="m-3">
+        {{ menus.registry.render }}
+    </div>
+    <div class="m-3">
+        {% show_src_code 'source_code' 'registry' %}
+    </div>
+
     <h4 class="m-3">Loops</h4>
     <p class="m-3">One way of doing loops is to use a custom template tag. Tag not included in the package.</p>
     <p class="m-3">PK = 1</p>

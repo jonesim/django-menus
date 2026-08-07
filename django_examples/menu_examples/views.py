@@ -11,7 +11,7 @@ from show_src_code.view_mixins import DemoViewMixin
 
 from django_menus.menu import DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
     MenuItemDisplay
-from django_menus.menu import MenuItem
+from django_menus.menu import MenuEntry, MenuItem, registry
 from django_menus.menu.context_menu import ContextMenuMixin
 from django_menus.menu.menu_items import HeaderItem
 
@@ -36,6 +36,7 @@ class MainMenu(DemoViewMixin, AjaxMenuTemplateView):
 
 class AjaxTabExample(MainMenu, AjaxMenuTabs):
 
+    menu_entry = MenuEntry('examples', display='Ajax Tabs')
     template_name = 'menu_examples/base_ajax_tabs.html'
     tab_template = 'menu_examples/tab_template.html'
     additional_content = [('button_menu', AjaxMenuTabs.MENU_CONTENT)]
@@ -68,6 +69,8 @@ class AjaxTabExample(MainMenu, AjaxMenuTabs):
 
 class AjaxTabExample2(AjaxTabExample):
 
+    # menu_entry is inherited, so a subclass that should not appear has to opt out.
+    menu_entry = None
     tab_template = 'menu_examples/tab_template2.html'
 
 
@@ -146,6 +149,19 @@ class View1(MainMenu):
     def tab_menu(self):
         self.add_menu('tab_menu', 'tabs').add_items(('view1', {'key': 'a'}), MenuItem('view2', key=['alt-b', 'alt-B'], menu_display='View 2 (ALT b or B)'), 'view3', 'view4')
 
+    def registry_menus(self):
+        """Dropdowns assembled from the `menu_entry` on each view, not listed here.
+
+        See View2/View3/View4 below - adding a page to one of these dropdowns means editing only
+        that page's own view class.  `extra` items cover anything the URLConf cannot describe.
+        """
+        self.add_menu('registry', 'button_group').add_items(
+            registry.menu_item('examples', self.request,
+                               MenuItem('test_button', 'Ajax Button (extra)',
+                                        link_type=MenuItem.AJAX_BUTTON)),
+            registry.menu_item('reports', self.request),
+        )
+
     def dropdowns(self):
         self.add_menu('dropdown').add_items(
             MenuItem(menu_display='Dropdown', dropdown=('view1', MenuItem('view2', visible=True), 'view3')),
@@ -163,6 +179,7 @@ class View1(MainMenu):
         self.menu_links()
         self.button_groups()
         self.tab_menu()
+        self.registry_menus()
 
         self.add_menu('main').add_items('view1', 'view2', 'view3', ('view4', 'View 4'))
 
@@ -204,17 +221,22 @@ class View1(MainMenu):
 
 class View2(View1):
     breadcrumb = ['view1', 'view2']
-    pass
+    # Reachable as both 'view2' and 'int_path', so the entry has to say which name to use.
+    menu_entry = MenuEntry('examples', url_name='view2', display='View 2')
 
 
 class View3(View1):
     breadcrumb = ['view1', 'view2', 'view3', 'view4']
     menu_display = 'View-3'
+    menu_entry = MenuEntry('reports', 'sales', order=2)
 
 
 class View4(View1):
     breadcrumb = ['view1', 'view2', 'view3', ('view4', 'View4')]
     menu_display = MenuItemDisplay('View4', font_awesome='fas fa-adjust', css_classes=['btn-success'], tooltip='Menu display tool tip')
+    # display= relabels the item in this dropdown only - menu_display still drives the tabs above.
+    menu_entry = [MenuEntry('reports', 'sales', order=1, display='View 4 (renamed in menu)'),
+                  MenuEntry('reports', 'stock', display='View 4 in stock')]
 
 
 class SourceCodeModal(BaseSourceCodeModal):
@@ -225,10 +247,12 @@ class SourceCodeModal(BaseSourceCodeModal):
         'button_groups': View1.button_groups,
         'tab_menu': View1.tab_menu,
         'dropdowns': View1.dropdowns,
+        'registry': View1.registry_menus,
     }
 
 
 class ModalExamples(MainMenu):
+    menu_entry = MenuEntry('examples', display='Modals')
     template_name = 'menu_examples/modal_examples.html'
 
     def setup_menu(self):

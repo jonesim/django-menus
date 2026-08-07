@@ -130,3 +130,13 @@ STATIC_URL = '/static/'
 
 
 DJANGO_MENUS_BUTTON_DEFAULTS = {'global_edit': MenuItemDisplay('Edit-global-default', 'fas fa-pen', 'btn-success')}
+
+# Sections for the menu registry. Views join one by setting `menu_entry = MenuEntry('examples')`.
+DJANGO_MENUS_SECTIONS = {
+    'examples': {'title': 'Registry Examples'},
+    'reports': {
+        'title': 'Registry Reports',
+        'groups': ['sales', ('stock', 'Stock')],
+        'sort': 'order',
+    },
+}
