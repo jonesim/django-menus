@@ -55,7 +55,14 @@ class BaseMenuItem:
     def has_badge(self):
         return self._badge is not None
 
+    def resolve_visible(self, request):
+        """Replace a callable ``visible`` with the bool it returns for this request."""
+        if callable(self.visible):
+            self.visible = bool(self.visible(request))
+        return self.visible
+
     def test_visible(self, request):
+        self.resolve_visible(request)
         return True
 
 
@@ -145,7 +152,7 @@ class MenuItem(BaseMenuItem):
                              HREF]
 
     def test_visible(self, request):
-        if self.visible:
+        if self.resolve_visible(request):
             if self.link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
                 view_class = getattr(self.resolved_url.func, 'view_class', None)
                 if hasattr(view_class, 'view_permission'):
