@@ -289,6 +289,121 @@ class MyView(TemplateView):
         return request.user.has_perm('myapp.can_edit')
 ```
 
+### Callable `visible`
+
+`visible` accepts a callable taking the request, for items whose target view you do not own:
+
+```python
+MenuItem('admin:index', 'Admin', visible=lambda request: request.user.is_staff)
+```
+
+## Menu Registry
+
+A long dropdown listed in one central `setup_menu()` conflicts on every merge. The registry lets
+each view declare its own place instead, so adding a page touches only the app that owns it.
+
+Declare the sections once:
+
+```python
+DJANGO_MENUS_SECTIONS = {
+    'settings': {'title': 'Settings'},
+    'reports': {
+        'title': 'Reports',
+        'groups': ['sales', 'purchases', ('stock', 'Stock')],
+        'sort': 'order',
+    },
+}
+```
+
+Then each view says where it belongs:
+
+```python
+from django_menus.menu import MenuEntry
+
+class ExchangeRateList(ListView):
+    menu_display = 'Exchange Rates'
+    menu_entry = MenuEntry('settings')
+
+class StockReorderReport(ListView):
+    menu_display = 'Stock Reorder'
+    menu_entry = MenuEntry('reports', 'stock')
+```
+
+and the central menu shrinks to a skeleton:
+
+```python
+def setup_menu(self):
+    self.add_menu('main_menu').add_items(
+        'dashboard_view',
+        registry.menu_item('reports', self.request),
+        registry.menu_item('settings', self.request,
+                           MenuItem('page_info', 'Page Info', link_type=MenuItem.AJAX_BUTTON),
+                           MenuItem('admin:index', 'Admin', visible=lambda r: r.user.is_staff)),
+    )
+```
+
+The URLConf is walked once, lazily and cached; `MenuItem`s are built per request, so
+`view_permission` and callable `visible` behave exactly as they do in a hand-written menu.
+
+### `MenuEntry`
+
+| Argument | Purpose |
+|---|---|
+| `section` | Key in `DJANGO_MENUS_SECTIONS`. Required. |
+| `group` | Group within a grouped section. Required for grouped sections. |
+| `url_name` | Only needed when the view is reachable under more than one url name. |
+| `url_args` / `url_kwargs` | Arguments for `reverse()`, when the url pattern takes any. |
+| `display` | Overrides `menu_display` **in this section only** — tabs and breadcrumbs keep the view's own label. |
+| `order` | Sort position, used when the section sets `sort: 'order'`. |
+| anything else | Passed to `MenuItem()` — `font_awesome`, `css_classes`, `key`, `tooltip`… |
+
+Set `menu_entry` to a list to put one view in several sections. `menu_entry` is inherited, so a
+subclass that should not appear must set `menu_entry = None`.
+
+### Section options
+
+| Key | Default | Meaning |
+|---|---|---|
+| `title` | capitalised section name | Label of the parent item built by `menu_item()`. |
+| `font_awesome` | — | Icon for the parent item. |
+| `groups` | none | Group names in render order. A `(name, header)` pair emits a `HeaderItem`. |
+| `sort` | `'alpha'` | `'alpha'` by display text, `'order'` by `MenuEntry(order=...)`, or `'declared'` by URLConf order. |
+| `divider` | on when grouped | Insert a `DividerItem` between groups. |
+| `default_group` | first group | Group for entries that name none. |
+
+Dividers and headers are only emitted between groups that still have visible items for this
+request, so a group hidden by permissions never leaves a stray separator behind.
+
+### API
+
+```python
+from django_menus.menu import registry
+
+registry.dropdown(section, request, *extra)   # ordered list of items
+registry.menu_item(section, request, *extra)  # parent MenuItem with the dropdown attached
+registry.extra(item, group=..., order=..., sort_text=...)   # place a caller-built item
+registry.specs(section)                       # what the scan found, for diagnostics
+```
+
+`extra` items are ordinary `MenuItem`s built at the call site — use them for anything the URLConf
+cannot describe, such as an `AJAX_BUTTON` or a third-party view with no view class. They sort by
+their own display text alongside the registered items.
+
+### Checking it
+
+Mistyped sections and groups, ambiguous url names and missing url arguments are reported by
+`manage.py check` (ids `django_menus.E001`–`E007`, `W001`–`W002`) and raise `ImproperlyConfigured`
+when the registry scans.
+
+`manage.py show_menu` prints the resolved tree so ordering is inspectable without running the site:
+
+```bash
+manage.py show_menu                          # every configured section
+manage.py show_menu reports --user ian       # one section, as a given user
+manage.py show_menu --view dashboard_view    # the menus a view actually builds
+manage.py show_menu --view dashboard_view --show-hidden --format json
+```
+
 ## AJAX Tab Interfaces
 
 `AjaxMenuTabs` handles a tab bar where each tab loads its content via AJAX:

@@ -22,10 +22,17 @@ docker-compose up
 
 **Build the package:**
 ```bash
-python setup.py sdist bdist_wheel
+python -m build
 ```
 
-There is no formal test suite. Feature validation is done by running the example project at `django_examples/menu_examples/`.
+**Run the tests:**
+```bash
+python -m django test tests --settings=tests.settings
+```
+
+The `tests/` package at the repo root has its own settings module and URLConf — `django_examples.settings` cannot host tests because `menu_examples.apps.ModalConfig` (via `show_src_code.apps.PypiAppConfig`) makes a live PyPI request when the app registry is populated. `tests/` is excluded from the wheel by the `packages.find` include filter.
+
+Coverage is the menu registry plus a regression baseline pinning every `add_items` form and every menu template to its exact rendered HTML. Anything not covered there is still validated by running the example project at `django_examples/menu_examples/`.
 
 ## Architecture
 
@@ -49,6 +56,18 @@ There is no formal test suite. Feature validation is done by running the example
 - `AjaxButtonMenuItem` — Wraps `MenuItem` for AJAX form-submit buttons.
 
 **`tabs.py`** — `AjaxMenuTabs`: tab-based interfaces where each tab loads content via AJAX. Tabs are either template-based or menu-based. Use `tab_response()` to handle tab switching.
+
+**`registry.py`** — `MenuRegistry`-style module-level API that builds dropdown contents from `menu_entry` declarations on view classes, so each app owns its own menu entries instead of one central `setup_menu()`:
+- `MenuEntry(section, group=None, url_name=None, url_args=None, url_kwargs=None, display=None, order=None, **item_kwargs)` — the declaration, set as `menu_entry` on a view class (or a list of them for several sections). Pure data; it must never call `reverse()`/`resolve()`, because it is built at import time.
+- `MenuSpec` — one scanned `(entry, full url name, view class)` triple. `menu_item()` materialises it; that is the only place `MenuItem` is constructed.
+- `dropdown(section, request, *extra)` / `menu_item(section, request, *extra)` — build the section per request. `extra` items are caller-built `MenuItem`s (an `AJAX_BUTTON`, `admin:index`, anything the URLConf cannot describe) and sort by their display text alongside the registered ones.
+- `extra(item, group=..., order=..., sort_text=...)` — stamp `registry_group` / `registry_order` / `registry_sort_text` on a caller-built item.
+- Sections come from `DJANGO_MENUS_SECTIONS`; `sort` is `'alpha'` (default), `'order'` or `'declared'`. Dividers and headers are emitted only between groups that still have visible items after `test_visible`, so a permission-hidden group leaves no stray separator.
+- The URLConf scan is cached on `get_urlconf() or settings.ROOT_URLCONF` — the same key Django's own `get_resolver` uses — and `clear_cache` is connected to `setting_changed` in `apps.ready()`.
+
+**`checks.py`** — system checks (`django_menus.E001`–`E007`, `W001`–`W002`) sharing `registry.validate()` with the scan, which also raises `ImproperlyConfigured`. `E005` catches a url pattern needing more arguments than the entry supplies, statically, without reversing.
+
+**`management/commands/show_menu.py`** — prints the resolved menu. Registry mode lists each section and everything the scan found; `--view <url_name>` instantiates the view, calls `setup_menu()` and walks `view.menus`, which is the only way to see the top-level skeleton and the `extra` items. `--format json` makes the output assertable.
 
 **`context_menu.py`** — `ContextMenuMixin`: right-click context menus. Elements matching `context_menu_selector` (default `'.context_menu'`) post `{"ajax": "context_menu"}` on right-click, handled by `ajax_context_menu(*args, **kwargs)` returning `self.add_context_menu(*items)`. A `data-ajax="other_name"` attribute on the element routes to `ajax_other_name` instead; the element's `id` and other data attributes arrive in the handler kwargs. Requires `django-ajax-helpers` on the view (e.g. `AjaxMenuTemplateView`).
 
