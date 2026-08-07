@@ -205,8 +205,14 @@ def walk_urls(patterns, namespaces=(), captured=0):
 
 
 def view_entries(view_class, errors):
-    """The MenuEntry list declared by a view class.  Inherited entries count."""
-    declared = getattr(view_class, 'menu_entry', None)
+    """The MenuEntry list declared by a view class itself.
+
+    Entries are deliberately not inherited.  A menu place belongs to one page, and subclasses -
+    the archived variant, the grouped variant, the one that takes a pk - are usually reachable
+    under their own url names, so inheriting would silently add a duplicate item for each.  A
+    subclass that should appear repeats a MenuEntry of its own.
+    """
+    declared = view_class.__dict__.get('menu_entry')
     if declared is None:
         return []
     entries = declared if isinstance(declared, (list, tuple)) else [declared]
