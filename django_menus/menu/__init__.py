@@ -3,3 +3,5 @@ from .menu_items import (MenuItem, MenuItemDisplay, BaseMenuItem, DividerItem, H
 from .menu import MenuMixin, HtmlMenu, MenuTemplateView, AjaxMenuTemplateView, AjaxMenuDropDownItem
 from .tabs import AjaxMenuTabs
 from .context_menu import ContextMenuMixin
+from . import registry
+from .registry import MenuEntry
