@@ -3,6 +3,18 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
     var menu = $('#' + reference.attr('id') + '-menu');
     var pop;
 
+    // The menu is not a child of the reference, so it has no useful position of its own until
+    // Popper gives it one. Every path that shows the menu has to come through here, not just
+    // hover -- a menu opened by click, by the keyboard, or by a tap would otherwise fall back to
+    // the stylesheet and land at the edge of its nearest positioned ancestor.
+    function position() {
+        if (pop == undefined) {
+            pop = new Popper(reference, menu, {placement: placement});
+        } else {
+            pop.update();
+        }
+    }
+
     menu.click(function () {
         menu.removeClass('show clicked');
     })
@@ -10,11 +22,7 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
     reference.hover(function (e) {
         var reference = $(this);
         var menu = $('#' + reference.attr('id') + '-menu');
-        if (pop == undefined) {
-            pop = new Popper(reference, menu, {placement: placement});
-        } else {
-            pop.update();
-        }
+        position();
         if (reference.is(':hover')) {
             $('.menu-system.show').removeClass('show');
             menu.addClass('show menu-system');
@@ -39,6 +47,8 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
             menu.removeClass('show clicked');
         } else {
             menu.addClass('show clicked');
+            // After the class, so the menu has been laid out and Popper can measure it.
+            position();
         }
     });
 
