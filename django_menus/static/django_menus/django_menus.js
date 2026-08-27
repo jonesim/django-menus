@@ -10,14 +10,17 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
     reference.hover(function (e) {
         var reference = $(this);
         var menu = $('#' + reference.attr('id') + '-menu');
-        if (pop == undefined) {
-            pop = new Popper(reference, menu, {placement: placement});
-        } else {
-            pop.update();
-        }
         if (reference.is(':hover')) {
             $('.menu-system.show').removeClass('show');
             menu.addClass('show menu-system');
+            // Positioned only once the menu is shown: a display:none element measures 0x0, so a
+            // Popper built before the menu is visible lays it out with no width and cannot see
+            // that it overflows the window.
+            if (pop == undefined) {
+                pop = new Popper(reference, menu, {placement: placement});
+            } else {
+                pop.update();
+            }
         }
         setTimeout(function () {
             if (!reference.is(':hover') && !menu.is(':hover') && !menu.hasClass('clicked')) {
@@ -61,13 +64,19 @@ var dropdown_menu_click = function dropdown_menu_click(reference) {
     })
 
     reference.click(function () {
-        if (pop == undefined) {
-            pop = new Popper(reference, menu, {placement: placement})
-        }
         if (menu.hasClass('clicked')) {
             menu.removeClass('show clicked')
         } else {
             menu.addClass('show clicked')
+            // Positioned only once the menu is shown: a display:none element measures 0x0, so a
+            // Popper built before the menu is visible lays it out with no width and cannot see
+            // that it overflows the window. Updated on every reopen because the page can have
+            // been laid out again since the Popper was built.
+            if (pop == undefined) {
+                pop = new Popper(reference, menu, {placement: placement})
+            } else {
+                pop.update()
+            }
         }
     })
 
