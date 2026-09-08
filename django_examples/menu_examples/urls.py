@@ -23,6 +23,7 @@ urlpatterns = [
     path('context/', views.ContextMenu.as_view(), name='context_examples'),
     path('ajax-dropdownmenu/', views.AjaxDropDownMenu.as_view(), name='ajax_dropdown_menu_examples'),
     path('repeat-clicks/', views.RepeatClickExamples.as_view(), name='repeat_click_examples'),
+    path('repeat-clicks/guarded/', views.RepeatClickGuarded.as_view(), name='repeat_click_guarded'),
     path('repeat-clicks/bump/', views.BumpCounter.as_view(), name='bump_counter'),
     path('repeat-clicks/reset/', views.ResetCounter.as_view(), name='reset_counter'),
 

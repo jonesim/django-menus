@@ -303,20 +303,32 @@ request_counter = RequestCounter()
 
 
 class RepeatClickExamples(MainMenu):
-    """Opting in to the repeat-click guard, and seeing what it does and does not hold.
+    """The repeat-click guard OFF - the shipped default, and what a double-click costs without it.
 
     A menu item usually points at a view that just shows a page, where clicking twice costs
     nothing. Some point at a view that DOES something, and those are reached twice by a
     double-click - the counter on this page is bumped by one of those.
+
+    The guard is opted into with a single view attribute, so the whole of the difference between
+    this page and the guarded one below is `repeat_click_ms`. Set it on a base view class instead
+    of one view and it applies to every page that inherits from it.
     """
 
     template_name = 'menu_examples/repeat_click_examples.html'
+    repeat_click_ms = 0
+
+    # Bumping redirects, and it has to come back to the page it was clicked on: the guarded and
+    # unguarded pages differ only by repeat_click_ms, so sending both back to one of them lands
+    # you on the wrong side of the comparison after the first click.
+    url_name = 'repeat_click_examples'
 
     def setup_menu(self):
         super().setup_menu()
         self.menus['main_menu'].active = 'repeat_click_examples'
+        back_here = {'next': self.url_name}
         self.add_menu('repeat_click', 'button_group').add_items(
-            MenuItem('bump_counter', 'Bump the counter', font_awesome='fas fa-plus'),
+            MenuItem('bump_counter', 'Bump the counter', font_awesome='fas fa-plus',
+                     query_string_params=back_here),
             # A javascript: item is never held, however short the gap: the page has not gone
             # anywhere, so a second click is not a repeat of a navigation - it is a second
             # action, which is usually exactly what the user wants (close a modal, reopen it).
@@ -324,7 +336,14 @@ class RepeatClickExamples(MainMenu):
                      'A javascript: item',
                      link_type=MenuItem.JAVASCRIPT,
                      css_classes='btn-outline-secondary'),
-            MenuItem('reset_counter', 'Reset', css_classes='btn-outline-danger'),
+            MenuItem('reset_counter', 'Reset', css_classes='btn-outline-danger',
+                     query_string_params=back_here),
+        )
+        self.add_menu('guard_switch', 'button_group').add_items(
+            MenuItem('repeat_click_examples', 'repeat_click_ms = 0',
+                     css_classes='btn-outline-primary'),
+            MenuItem('repeat_click_guarded', 'repeat_click_ms = 2000',
+                     css_classes='btn-outline-primary'),
         )
 
     def get_context_data(self, **kwargs):
@@ -333,7 +352,32 @@ class RepeatClickExamples(MainMenu):
         return context
 
 
-class BumpCounter(RedirectView):
+class RepeatClickGuarded(RepeatClickExamples):
+    """The same page with the guard ON. The attribute is the only difference."""
+
+    repeat_click_ms = 2000
+    url_name = 'repeat_click_guarded'
+
+
+class ReturnToCallerRedirect(RedirectView):
+    """Redirects back to whichever of the two example pages sent us here.
+
+    ?next= is matched against a fixed set of url names rather than reversed as given. A demo gets
+    copied, and reversing an arbitrary name from the query string - or worse, redirecting to a
+    raw URL from it - is how an open redirect gets into somebody's project.
+    """
+
+    allowed_next = ('repeat_click_examples', 'repeat_click_guarded')
+    pattern_name = 'repeat_click_examples'
+
+    def get_redirect_url(self, *args, **kwargs):
+        requested = self.request.GET.get('next')
+        if requested in self.allowed_next:
+            self.pattern_name = requested
+        return super().get_redirect_url(*args, **kwargs)
+
+
+class BumpCounter(ReturnToCallerRedirect):
     """Stands in for a view that acts on a GET and then redirects back.
 
     Deliberately NOT idempotent - it counts every request it is sent, so a double-click that
@@ -347,7 +391,6 @@ class BumpCounter(RedirectView):
     nothing. A real server doing real work supplies the delay; here it is faked.
     """
 
-    pattern_name = 'repeat_click_examples'
     work_seconds = 1
 
     def get_redirect_url(self, *args, **kwargs):
@@ -356,8 +399,7 @@ class BumpCounter(RedirectView):
         return super().get_redirect_url(*args, **kwargs)
 
 
-class ResetCounter(RedirectView):
-    pattern_name = 'repeat_click_examples'
+class ResetCounter(ReturnToCallerRedirect):
 
     def get_redirect_url(self, *args, **kwargs):
         request_counter.reset()

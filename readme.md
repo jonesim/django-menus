@@ -17,14 +17,25 @@ drawn against - acts on both.
 
 This is **off by default** - swallowing a click is a behaviour change, and whether a project has
 menu items pointing at views that mind being called twice is the project's business. Opt in with
-the milliseconds to hold a link for:
+a view attribute, giving the milliseconds to hold a link for:
+
+    class MyView(MenuTemplateView):
+        repeat_click_ms = 2000
+
+Set it on one view for one page, or on a base view class for a whole site. It reaches the page
+through the `django_menus_script` context variable, so output that once in a base template,
+alongside the include:
+
+    {% lib_include module='django_menus.includes' %}
+    {{ django_menus_script }}
+
+All the attribute does is set a JS window of the same name, which the guard reads on every click
+rather than capturing at load - so it can also be set or changed directly, from a page's own
+script or a console while diagnosing, on either side of the include:
 
     django_menus_repeat_click_ms = 2000;
 
-It is read on each click rather than captured at load, and an assignment made before this app's
-JS loads survives, so it can be set either side of the include and changed at any point in a
-page's life. Set it back to `0` to turn it off again; anything that is not a number above zero
-reads as off.
+Either way, `0` turns it off, and anything that is not a number above zero reads as off.
 
 Once on, a second click on the same anchor inside that window is swallowed. Only real navigations
 are affected - a `javascript:` href leaves the page in place and clicking again straight away is

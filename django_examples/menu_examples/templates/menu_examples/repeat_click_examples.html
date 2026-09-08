@@ -32,38 +32,53 @@
         {{ menus.repeat_click.render }}
     </div>
 
-    <div class="custom-control custom-switch mb-4">
-        <input type="checkbox" class="custom-control-input" id="guard-toggle">
-        <label class="custom-control-label" for="guard-toggle">
-            Guard on &mdash; <code>django_menus_repeat_click_ms = 2000</code>
-        </label>
+    <h5>This page</h5>
+    <p>
+        {% if view.repeat_click_ms %}
+            The guard is <strong>on</strong>: this view sets
+            <code>repeat_click_ms = {{ view.repeat_click_ms }}</code>.
+        {% else %}
+            The guard is <strong>off</strong>: this view leaves
+            <code>repeat_click_ms</code> at its default of <code>0</code>.
+        {% endif %}
+        Both pages are the same view class and the same template &mdash; the guarded one is a
+        two-line subclass that changes nothing but that attribute. Switch between them:
+    </p>
+
+    <div class="mb-4">
+        {{ menus.guard_switch.render }}
     </div>
 
     <h5>Try it</h5>
     <ol>
-        <li>Leave the switch off and <strong>double-click</strong> <em>Bump the counter</em>. The
-            counter goes up by <strong>two</strong> &mdash; the view was reached twice.</li>
-        <li>Turn the switch on and double-click it again. The counter goes up by
+        <li>On the <code>= 0</code> page, <strong>double-click</strong> <em>Bump the counter</em>.
+            The counter goes up by <strong>two</strong> &mdash; the view was reached twice.</li>
+        <li><em>Reset</em>, switch to the <code>= 2000</code> page and double-click it again. Up by
             <strong>one</strong>.</li>
-        <li>With the switch still on, click it once, wait for the page to come back, then click
-            again. It goes up each time &mdash; only a <em>repeat</em> of a click that is already
-            navigating is dropped, never a deliberate second one.</li>
-        <li>Double-click <em>A javascript: item</em> with the switch on. Two alerts: the page never
-            went anywhere, so nothing is held.</li>
+        <li>Still on that page, click it once, wait for the page to come back, then click again. It
+            goes up each time &mdash; only a <em>repeat</em> of a click that is already navigating
+            is dropped, never a deliberate second one.</li>
+        <li>Double-click <em>A javascript: item</em> there. Two alerts: the page never went
+            anywhere, so nothing is held.</li>
     </ol>
 
-    <h5>Turning it on for real</h5>
+    <h5>Using it</h5>
     <p>
-        The switch above is only so you can see both behaviours on one page. A project sets it once,
-        anywhere its own JS runs &mdash; a base template is the obvious place:
+        Set the attribute on one view for one page, or on a base view class for a whole site:
     </p>
-<pre class="border rounded bg-light p-3"><code>{% templatetag openblock %} lib_include module='django_menus.includes' {% templatetag closeblock %}
-&lt;script&gt;django_menus_repeat_click_ms = 2000;&lt;/script&gt;</code></pre>
+<pre class="border rounded bg-light p-3"><code>class MyView(MenuTemplateView):
+    repeat_click_ms = 2000</code></pre>
     <p>
-        Either side of the include works &mdash; the value is initialised from <code>window</code>
-        rather than overwritten, and it is read on every click rather than captured at load. That
-        last part is what lets the switch above work without a reload. Set it back to
-        <code>0</code> to turn it off; anything that is not a number above zero reads as off.
+        It reaches the page through the <code>django_menus_script</code> context variable, so a
+        template has to output it &mdash; once, in a base template, next to wherever the
+        <code>django_menus</code> include lives:
+    </p>
+<pre class="border rounded bg-light p-3"><code>{% templatetag openvariable %} django_menus_script {% templatetag closevariable %}</code></pre>
+    <p>
+        All the attribute does is set a JS window of the same name, which the guard reads on every
+        click rather than capturing at load &mdash; so it can still be changed at runtime, from a
+        console while diagnosing or by a page's own script. Anything that is not a number above
+        zero reads as off.
     </p>
 
     <h5>What it will not do for you</h5>
@@ -75,22 +90,4 @@
     </p>
 
 </div>
-<script>
-    // Persisted only because bumping the counter reloads the page, and a switch that reset every
-    // time would make the comparison above impossible to follow. Nothing here is part of using
-    // the guard - a project just assigns the window once, as shown on the page.
-    (function () {
-        var toggle = $('#guard-toggle');
-
-        function apply() {
-            var on = toggle.prop('checked');
-            window.django_menus_repeat_click_ms = on ? 2000 : 0;
-            sessionStorage.setItem('demo_guard_on', on ? '1' : '');
-        }
-
-        toggle.prop('checked', !!sessionStorage.getItem('demo_guard_on'));
-        apply();
-        toggle.on('change', apply);
-    })();
-</script>
 {% endblock %}

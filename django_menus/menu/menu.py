@@ -109,6 +109,25 @@ class HtmlMenu:
 
 class MenuMixin:
 
+    # Milliseconds to hold a menu link for after it is clicked, so that a double-click on an item
+    # pointing at a view which DOES something reaches it once instead of twice. 0 is off, and off
+    # is the default: swallowing a click is a behaviour change, and whether a project has items
+    # like that is the project's business.
+    #
+    # Set it on a view for one page, or on a base view class for a whole site. It is rendered by
+    # the django_menus_script context variable, so a template has to output that - see the readme.
+    # It only ever sets the JS window of the same name, so it can still be changed at runtime.
+    repeat_click_ms = 0
+
+    script_template = 'django_menus/script.html'
+
+    def django_menus_script(self):
+        """The <script> that carries this view's menu settings into the page."""
+        if not self.repeat_click_ms:
+            return ''
+        return mark_safe(render_to_string(self.script_template,
+                                          context={'repeat_click_ms': int(self.repeat_click_ms)}))
+
     def add_menu(self, menu_name, menu_type=None, **kwargs):
         request = getattr(self, 'request', None)
         if menu_type:
@@ -125,6 +144,7 @@ class MenuMixin:
         else:
             context = {}
         context['menus'] = self.menus
+        context['django_menus_script'] = self.django_menus_script()
         return context
 
     def setup_menu(self):
