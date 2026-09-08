@@ -1,0 +1,96 @@
+{% extends 'menu_examples/base.html' %}
+{% block contents %}
+<div class="m-4" style="max-width: 52rem;">
+
+    <h3>Repeat clicks on menu links</h3>
+
+    <p>
+        Most menu items point at a view that just shows a page, where clicking twice costs nothing.
+        Some point at a view that <em>does</em> something &mdash; and a double-click sends that URL
+        twice, so a view which works out what to act on from its own current state acts on both.
+    </p>
+
+    <p>
+        The counter below is bumped by exactly that kind of view: it counts every request it is
+        sent, then redirects back here. It also sleeps for a second before answering &mdash; the
+        guard drops a click that repeats a navigation <em>already under way</em>, so there has to
+        be a window in which one is. A real server doing real work supplies that; a local
+        runserver answering instantly would close it, and this page would demonstrate nothing.
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-body text-center">
+            <div class="display-4">{{ bump_count }}</div>
+            <small class="text-muted">
+                requests the view behind <em>Bump the counter</em> has received<br>
+                <span class="small">counted per server process, so shared with anyone else poking at this demo</span>
+            </small>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        {{ menus.repeat_click.render }}
+    </div>
+
+    <div class="custom-control custom-switch mb-4">
+        <input type="checkbox" class="custom-control-input" id="guard-toggle">
+        <label class="custom-control-label" for="guard-toggle">
+            Guard on &mdash; <code>django_menus_repeat_click_ms = 2000</code>
+        </label>
+    </div>
+
+    <h5>Try it</h5>
+    <ol>
+        <li>Leave the switch off and <strong>double-click</strong> <em>Bump the counter</em>. The
+            counter goes up by <strong>two</strong> &mdash; the view was reached twice.</li>
+        <li>Turn the switch on and double-click it again. The counter goes up by
+            <strong>one</strong>.</li>
+        <li>With the switch still on, click it once, wait for the page to come back, then click
+            again. It goes up each time &mdash; only a <em>repeat</em> of a click that is already
+            navigating is dropped, never a deliberate second one.</li>
+        <li>Double-click <em>A javascript: item</em> with the switch on. Two alerts: the page never
+            went anywhere, so nothing is held.</li>
+    </ol>
+
+    <h5>Turning it on for real</h5>
+    <p>
+        The switch above is only so you can see both behaviours on one page. A project sets it once,
+        anywhere its own JS runs &mdash; a base template is the obvious place:
+    </p>
+<pre class="border rounded bg-light p-3"><code>{% templatetag openblock %} lib_include module='django_menus.includes' {% templatetag closeblock %}
+&lt;script&gt;django_menus_repeat_click_ms = 2000;&lt;/script&gt;</code></pre>
+    <p>
+        Either side of the include works &mdash; the value is initialised from <code>window</code>
+        rather than overwritten, and it is read on every click rather than captured at load. That
+        last part is what lets the switch above work without a reload. Set it back to
+        <code>0</code> to turn it off; anything that is not a number above zero reads as off.
+    </p>
+
+    <h5>What it will not do for you</h5>
+    <p>
+        It stops a duplicate <em>click</em>, not a duplicate <em>request</em>. Reload this page
+        after bumping, or press Back and then Forward, and the counter moves again &mdash; the
+        guard never sees those. A view that minds being called twice still has to be idempotent;
+        this is the layer in front of that, not a replacement for it.
+    </p>
+
+</div>
+<script>
+    // Persisted only because bumping the counter reloads the page, and a switch that reset every
+    // time would make the comparison above impossible to follow. Nothing here is part of using
+    // the guard - a project just assigns the window once, as shown on the page.
+    (function () {
+        var toggle = $('#guard-toggle');
+
+        function apply() {
+            var on = toggle.prop('checked');
+            window.django_menus_repeat_click_ms = on ? 2000 : 0;
+            sessionStorage.setItem('demo_guard_on', on ? '1' : '');
+        }
+
+        toggle.prop('checked', !!sessionStorage.getItem('demo_guard_on'));
+        apply();
+        toggle.on('change', apply);
+    })();
+</script>
+{% endblock %}
