@@ -325,8 +325,12 @@ $(document).on('click', 'a.django-menus-item', function (event) {
     if (!href || href.charAt(0) === '#' || href.slice(0, 11).toLowerCase() === 'javascript:') {
         return;
     }
+    // new Date().getTime() rather than Date.now(): the latter is ES5.1, and this file is served
+    // as-is to whatever the project supports (django_menus declares no legacy_js build to fall
+    // back to), so there is no reason for this to be what raises the browser floor.
+    var now = new Date().getTime();
     var clicked_at = $(this).data('django-menus-clicked-at');
-    if (clicked_at !== undefined && Date.now() - clicked_at < hold_ms) {
+    if (clicked_at !== undefined && now - clicked_at < hold_ms) {
         // preventDefault alone, deliberately. `return false` would also stop propagation, and
         // jQuery runs directly-bound document handlers after delegated ones - so it would rob
         // the dropdown/context-menu closers and Bootstrap's clearMenus of a click they should
@@ -334,7 +338,7 @@ $(document).on('click', 'a.django-menus-item', function (event) {
         event.preventDefault();
         return;
     }
-    $(this).data('django-menus-clicked-at', Date.now());
+    $(this).data('django-menus-clicked-at', now);
 });
 
 $(window).on('pageshow', function (event) {
@@ -342,7 +346,18 @@ $(window).on('pageshow', function (event) {
     // link clicked just before navigating away would still be held - clicking Back and
     // immediately clicking the same item again would do nothing. A restored page is a fresh
     // start, so the timers go.
-    if (event.originalEvent && event.originalEvent.persisted) {
-        $('a.django-menus-item').removeData('django-menus-clicked-at');
+    //
+    // Nothing can be holding a timer unless something opted in, and this is the only place the
+    // guard would touch the DOM while switched off, so it checks first: with no page-level
+    // window and no item carrying its own, a restore does no work here.
+    if (!event.originalEvent || !event.originalEvent.persisted) {
+        return;
     }
+    var held = $('a.django-menus-item[data-django-menus-repeat-ms]');
+    if (Number(django_menus_repeat_click_ms) > 0) {
+        held = $('a.django-menus-item');
+    } else if (!held.length) {
+        return;
+    }
+    held.removeData('django-menus-clicked-at');
 });
