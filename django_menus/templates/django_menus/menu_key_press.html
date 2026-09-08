@@ -3,6 +3,10 @@
     if (!window.django_menu_key_listener) {
         window.django_menu_key_listener = true;
         document.addEventListener('keydown', function (e) {
+            // Ignore auto-repeat so a held key doesn't follow the link repeatedly
+            if (e.repeat) {
+                return;
+            }
             if (typeof django_modal !== 'undefined' && django_modal.active_modal_container_id() !== "modal-0") {
                 return;
             }

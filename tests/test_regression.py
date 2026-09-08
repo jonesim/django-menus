@@ -187,6 +187,19 @@ class TemplateTests(TestCase):
                          '               class="mr-1 mb-1 btn btn-primary" ><span >About Us</span></a></div>')
 
 
+class KeyboardShortcutTests(TestCase):
+
+    def test_shortcut_href_carries_no_target_markup(self):
+        menu = HtmlMenu(make_request()).add_items(MenuItem('about', 'About Us', key='a', target='_blank'))
+        html = render_menu(menu)
+        self.assertIn('href="/about/" target="_blank"', html)
+        self.assertIn('"href": "/about/", "key": "a"', html)
+
+    def test_held_key_is_ignored(self):
+        html = render_menu(HtmlMenu(make_request()).add_items(MenuItem('about', 'About Us', key='a')))
+        self.assertIn('if (e.repeat)', html)
+
+
 class MenuConfigTests(TestCase):
 
     def test_menu_config_attributes(self):
