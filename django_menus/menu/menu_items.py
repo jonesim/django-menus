@@ -389,7 +389,15 @@ class MenuItem(BaseMenuItem):
         elif isinstance(function_def, (list, tuple)):
             return function_def[0](self, *function_def[1:])
 
-    def href(self):
+    def href(self, with_target=True):
+        """The item's href, for rendering inside `href="..."`.
+
+        `with_target=False` for anywhere the result is used as a URL rather than dropped into
+        that attribute: a target is added by closing the attribute early and opening a second
+        one, so the return value is markup rather than a URL whenever an item has one. That is
+        fine in a template and wrong everywhere else - the keyboard-shortcut handler assigned it
+        to `a.href` and navigated to `/report.pdf" target="_blank`.
+        """
         if self.disabled:
             return 'javascript:void(0)'
         href = self._href
@@ -400,7 +408,7 @@ class MenuItem(BaseMenuItem):
                 href = self.external_function(self.menu_config['href_format'])
         elif self.link_type == self.AJAX_GET_URL_NAME:
             href = f"javascript: ajax_helpers.get_content('{href}')"
-        if self.target:
+        if with_target and self.target:
             href += f'" target="{self.target}'
         return mark_safe(href)
 

@@ -96,7 +96,7 @@ class HtmlMenu:
             if getattr(i, 'key', None):
                 key_list = [i.key] if isinstance(i.key, str) else i.key
                 for key in key_list:
-                    key_data = {'shift': False, 'alt': False, 'href': i.href()}
+                    key_data = {'shift': False, 'alt': False, 'href': i.href(with_target=False)}
                     for k in key.split('-'):
                         if k.lower() == 'shift':
                             key_data['shift'] = True
