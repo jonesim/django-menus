@@ -17,25 +17,38 @@ drawn against - acts on both.
 
 This is **off by default** - swallowing a click is a behaviour change, and whether a project has
 menu items pointing at views that mind being called twice is the project's business. Opt in with
-a view attribute, giving the milliseconds to hold a link for:
+the milliseconds to hold a link for, at whichever level fits. They cascade
+**item -> menu -> page -> off**, so the narrowest one set wins:
 
+    # one item - usually the one that knows it minds being clicked twice
+    MenuItem('next_stage', 'Go to Next Stage', django_menus_repeat_click_ms=2000)
+
+    # every item in a menu that has not set its own
+    HtmlMenu(request, 'button_group', django_menus_repeat_click_ms=2000)
+
+    # a page, or a whole site if set on a base view class
     class MyView(MenuTemplateView):
         repeat_click_ms = 2000
 
-Set it on one view for one page, or on a base view class for a whole site. It reaches the page
-through the `django_menus_script` context variable, so output that once in a base template,
-alongside the include:
+Because an item's own value wins, one item can be held on a page with the guard off, and
+`django_menus_repeat_click_ms=0` on an item opts it out where the page has it on.
+
+The first two forms render a `data-django-menus-repeat-ms` attribute on the anchor and need
+nothing else. The view attribute reaches the page through the `django_menus_script` context
+variable, so output that once in a base template, alongside the include:
 
     {% lib_include module='django_menus.includes' %}
     {{ django_menus_script }}
 
-All the attribute does is set a JS window of the same name, which the guard reads on every click
-rather than capturing at load - so it can also be set or changed directly, from a page's own
-script or a console while diagnosing, on either side of the include:
+All that does is set a JS window of the same name, which the guard reads on every click rather
+than capturing at load - so it can also be set or changed directly, from a page's own script or a
+console while diagnosing, on either side of the include:
 
     django_menus_repeat_click_ms = 2000;
 
-Either way, `0` turns it off, and anything that is not a number above zero reads as off.
+Anywhere it is set, `0` turns it off, and anything that is not a number above zero reads as off.
+
+See the **Repeat Clicks** page in the example app for all three working side by side.
 
 Once on, a second click on the same anchor inside that window is swallowed. Only real navigations
 are affected - a `javascript:` href leaves the page in place and clicking again straight away is

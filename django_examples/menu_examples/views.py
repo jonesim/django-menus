@@ -326,9 +326,24 @@ class RepeatClickExamples(MainMenu):
         super().setup_menu()
         self.menus['main_menu'].active = 'repeat_click_examples'
         back_here = {'next': self.url_name}
-        self.add_menu('repeat_click', 'button_group').add_items(
-            MenuItem('bump_counter', 'Bump the counter', font_awesome='fas fa-plus',
+
+        # Three links to the same view. They behave differently because of one argument, which is
+        # the point of this menu: the value cascades item -> menu -> page, so an item can be held
+        # on a page with the guard off, and opted out on a page with it on.
+        self.add_menu('bump_menu', 'button_group').add_items(
+            MenuItem('bump_counter', 'Follows the page', font_awesome='fas fa-plus',
                      query_string_params=back_here),
+            MenuItem('bump_counter', 'This item: held', font_awesome='fas fa-plus',
+                     django_menus_repeat_click_ms=2000,
+                     css_classes='btn-success',
+                     query_string_params=back_here),
+            MenuItem('bump_counter', 'This item: opted out', font_awesome='fas fa-plus',
+                     django_menus_repeat_click_ms=0,
+                     css_classes='btn-warning',
+                     query_string_params=back_here),
+        )
+
+        self.add_menu('extras', 'button_group').add_items(
             # A javascript: item is never held, however short the gap: the page has not gone
             # anywhere, so a second click is not a repeat of a navigation - it is a second
             # action, which is usually exactly what the user wants (close a modal, reopen it).
@@ -337,6 +352,12 @@ class RepeatClickExamples(MainMenu):
                      link_type=MenuItem.JAVASCRIPT,
                      css_classes='btn-outline-secondary'),
             MenuItem('reset_counter', 'Reset', css_classes='btn-outline-danger',
+                     query_string_params=back_here),
+        )
+
+        # A whole menu can be set in one place instead, for when every item in it acts.
+        self.add_menu('whole_menu', 'button_group', django_menus_repeat_click_ms=2000).add_items(
+            MenuItem('bump_counter', 'Held by its menu', font_awesome='fas fa-plus',
                      query_string_params=back_here),
         )
         self.add_menu('guard_switch', 'button_group').add_items(

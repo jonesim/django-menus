@@ -164,6 +164,9 @@ class MenuItem(BaseMenuItem):
     @menu.setter
     def menu(self, menu):
         self._menu = menu
+        menu_repeat_ms = getattr(menu, 'django_menus_repeat_click_ms', None)
+        if menu_repeat_ms is not None and 'data-django-menus-repeat-ms' not in self._attributes:
+            self._attributes['data-django-menus-repeat-ms'] = int(menu_repeat_ms)
         if menu.button_defaults and self.name in menu.button_defaults:
             self.menu_display = menu.button_defaults[self.name]
             if not isinstance(self.menu_display, MenuItemDisplay):
@@ -185,7 +188,7 @@ class MenuItem(BaseMenuItem):
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
-                 query_string_params=None, **kwargs):
+                 query_string_params=None, django_menus_repeat_click_ms=None, **kwargs):
         super().__init__(**kwargs, badge=badge)
         self.query_string_params = query_string_params
         self._resolved_url = None
@@ -199,6 +202,12 @@ class MenuItem(BaseMenuItem):
                 url = split_url[0]
         self._href = self.raw_href(url, url_args, url_kwargs, **kwargs)
         self._attributes = self.attr(attributes, tooltip)
+        # Milliseconds to hold THIS item for after it is clicked, overriding whatever the menu or
+        # the page has set - including turning the guard on for one item when it is off for the
+        # page, which is the point: the item that minds being clicked twice is usually the one
+        # that knows it. 0 opts an item out again where the page has it on.
+        if django_menus_repeat_click_ms is not None:
+            self._attributes['data-django-menus-repeat-ms'] = int(django_menus_repeat_click_ms)
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = getattr(self.resolved_url.func, 'view_class', None)

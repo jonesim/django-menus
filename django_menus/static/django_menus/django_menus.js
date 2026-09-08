@@ -244,9 +244,17 @@ function get_ajax_dropdown_menu(button, dropdownViewName, value) {
  *
  * OFF by default: swallowing a click is a behaviour change, and whether a project has menu items
  * pointing at views that mind being called twice is the project's business, not this library's.
- * Opt in with the milliseconds to hold a link for:
+ * Opt in with the milliseconds to hold a link for, at whichever level fits - they cascade
+ * item -> menu -> page -> off:
  *
- *     django_menus_repeat_click_ms = 2000;
+ *     MenuItem('next_stage', 'Go to Next Stage', django_menus_repeat_click_ms=2000)
+ *     HtmlMenu(request, 'button_group', django_menus_repeat_click_ms=2000)
+ *     class MyView(MenuTemplateView):
+ *         repeat_click_ms = 2000
+ *
+ * The first two render data-django-menus-repeat-ms on the anchor; the last sets the window
+ * below. An item's own value wins, so one item can be held on a page with the guard off, and
+ * 0 on an item opts it out where the page has it on.
  *
  * Read on each click rather than captured at load, so it can be changed at any point in a page's
  * life. An assignment made BEFORE this file loads survives too (see the initialiser below), so
@@ -291,9 +299,13 @@ function get_ajax_dropdown_menu(button, dropdownViewName, value) {
 var django_menus_repeat_click_ms = window.django_menus_repeat_click_ms || 0;
 
 $(document).on('click', 'a.django-menus-item', function (event) {
+    // An item's own data-django-menus-repeat-ms wins over the page's window, so a single item
+    // can be held where the page has the guard off, and 0 on an item opts it out where the page
+    // has it on. jQuery has already turned the attribute into a number.
+    var item_ms = $(this).data('djangoMenusRepeatMs');
     // Number() so junk reads as off rather than as NaN comparisons that quietly never fire:
     // 0, a negative, a non-numeric string and true all fail this.
-    var hold_ms = Number(django_menus_repeat_click_ms);
+    var hold_ms = Number(item_ms === undefined ? django_menus_repeat_click_ms : item_ms);
     if (!(hold_ms > 0)) {
         return;
     }

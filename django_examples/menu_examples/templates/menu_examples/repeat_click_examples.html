@@ -28,55 +28,100 @@
         </div>
     </div>
 
-    <div class="mb-3">
-        {{ menus.repeat_click.render }}
+    <div class="mb-2">
+        {{ menus.bump_menu.render }}
+    </div>
+    <div class="mb-2">
+        {{ menus.whole_menu.render }}
+    </div>
+    <div class="mb-4">
+        {{ menus.extras.render }}
     </div>
 
     <h5>This page</h5>
     <p>
         {% if view.repeat_click_ms %}
-            The guard is <strong>on</strong>: this view sets
+            The page has the guard <strong>on</strong>: this view sets
             <code>repeat_click_ms = {{ view.repeat_click_ms }}</code>.
         {% else %}
-            The guard is <strong>off</strong>: this view leaves
+            The page has the guard <strong>off</strong>: this view leaves
             <code>repeat_click_ms</code> at its default of <code>0</code>.
         {% endif %}
-        Both pages are the same view class and the same template &mdash; the guarded one is a
-        two-line subclass that changes nothing but that attribute. Switch between them:
+        Both pages are the same view class and the same template &mdash; the other is a two-line
+        subclass that changes nothing but that attribute. Switch between them:
     </p>
 
     <div class="mb-4">
         {{ menus.guard_switch.render }}
     </div>
 
-    <h5>Try it</h5>
-    <ol>
-        <li>On the <code>= 0</code> page, <strong>double-click</strong> <em>Bump the counter</em>.
-            The counter goes up by <strong>two</strong> &mdash; the view was reached twice.</li>
-        <li><em>Reset</em>, switch to the <code>= 2000</code> page and double-click it again. Up by
-            <strong>one</strong>.</li>
-        <li>Still on that page, click it once, wait for the page to come back, then click again. It
-            goes up each time &mdash; only a <em>repeat</em> of a click that is already navigating
-            is dropped, never a deliberate second one.</li>
-        <li>Double-click <em>A javascript: item</em> there. Two alerts: the page never went
-            anywhere, so nothing is held.</li>
-    </ol>
+    <p>So on <em>this</em> page, double-clicking each button bumps the counter by:</p>
+
+    <table class="table table-sm table-bordered mb-4">
+        <thead class="thead-light">
+            <tr><th>Button</th><th>Set by</th><th>Double-click</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Follows the page</td>
+                <td>nothing &mdash; inherits the page</td>
+                <td>{% if view.repeat_click_ms %}<strong>+1</strong>{% else %}<strong>+2</strong>{% endif %}</td>
+            </tr>
+            <tr>
+                <td>This item: held</td>
+                <td><code>django_menus_repeat_click_ms=2000</code> on the item</td>
+                <td><strong>+1</strong></td>
+            </tr>
+            <tr>
+                <td>This item: opted out</td>
+                <td><code>django_menus_repeat_click_ms=0</code> on the item</td>
+                <td><strong>+2</strong></td>
+            </tr>
+            <tr>
+                <td>Held by its menu</td>
+                <td><code>django_menus_repeat_click_ms=2000</code> on the <code>HtmlMenu</code></td>
+                <td><strong>+1</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>
+        The two middle rows are the interesting ones: on the <code>= 0</code> page an item is held
+        even though the page is not, and on the <code>= 2000</code> page an item is let through
+        even though the page is guarded. Remember to <em>Reset</em> between attempts.
+    </p>
+
+    <p>
+        Also worth trying: click a held button once, wait for the page to come back, then click it
+        again &mdash; it counts each time, because only a <em>repeat</em> of a click already
+        navigating is dropped, never a deliberate second one. And double-click
+        <em>A javascript: item</em>: two alerts, because the page never went anywhere.
+    </p>
 
     <h5>Using it</h5>
     <p>
-        Set the attribute on one view for one page, or on a base view class for a whole site:
+        Give the milliseconds to hold a link for at whichever level fits. They cascade
+        <strong>item &rarr; menu &rarr; page &rarr; off</strong>, so the narrowest one set wins:
     </p>
-<pre class="border rounded bg-light p-3"><code>class MyView(MenuTemplateView):
+<pre class="border rounded bg-light p-3"><code># one item - usually the one that knows it minds being clicked twice
+MenuItem('bump_counter', 'Bump the counter', django_menus_repeat_click_ms=2000)
+
+# every item in a menu that has not set its own
+HtmlMenu(request, 'button_group', django_menus_repeat_click_ms=2000)
+
+# a page, or a whole site if set on a base view class
+class MyView(MenuTemplateView):
     repeat_click_ms = 2000</code></pre>
     <p>
-        It reaches the page through the <code>django_menus_script</code> context variable, so a
-        template has to output it &mdash; once, in a base template, next to wherever the
-        <code>django_menus</code> include lives:
+        The first two render a <code>data-django-menus-repeat-ms</code> attribute on the anchor and
+        need nothing else. The view attribute reaches the page through the
+        <code>django_menus_script</code> context variable, so output that once in a base template,
+        alongside the include:
     </p>
 <pre class="border rounded bg-light p-3"><code>{% templatetag openvariable %} django_menus_script {% templatetag closevariable %}</code></pre>
     <p>
-        All the attribute does is set a JS window of the same name, which the guard reads on every
-        click rather than capturing at load &mdash; so it can still be changed at runtime, from a
+        All it does is set a JS window of the same name, which the guard reads on every click
+        rather than capturing at load &mdash; so it can still be changed at runtime, from a
         console while diagnosing or by a page's own script. Anything that is not a number above
         zero reads as off.
     </p>

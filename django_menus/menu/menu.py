@@ -25,7 +25,11 @@ class HtmlMenu:
     }
 
     def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
-                 placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False):
+                 placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False,
+                 django_menus_repeat_click_ms=None):
+        # Applied to every item in this menu that has not set its own. Cascades item -> menu ->
+        # page (the view's repeat_click_ms) -> off.
+        self.django_menus_repeat_click_ms = django_menus_repeat_click_ms
         self.menu_items = []
         self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
         if button_defaults is not None:
