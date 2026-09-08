@@ -1,5 +1,14 @@
 {% extends 'menu_examples/base.html' %}
 {% block contents %}
+<style>
+    /* django-menus ships no styling for this - the rule is the project's, so here is one. Only
+       the appearance: pointer-events: none would let the click fall through to whatever is
+       underneath, and the click is already stopped in JS. */
+    a.django-menus-clicked {
+        opacity: .65;
+        cursor: default;
+    }
+</style>
 <div class="m-4" style="max-width: 52rem;">
 
     <h3>Repeat clicks on menu links</h3>
@@ -96,6 +105,23 @@
         again &mdash; it counts each time, because only a <em>repeat</em> of a click already
         navigating is dropped, never a deliberate second one. And double-click
         <em>A javascript: item</em>: two alerts, because the page never went anywhere.
+    </p>
+
+    <h5>Showing that the click registered</h5>
+    <p>
+        Watch a held button during the second the server is busy: it fades. Swallowing the second
+        click stops the duplicate request, but people double-click <em>because</em> the first
+        click appeared to do nothing &mdash; so a held link carries a
+        <code>django-menus-clicked</code> class for you to hang that feedback on. No styling ships
+        with it; this page adds its own rule:
+    </p>
+<pre class="border rounded bg-light p-3"><code>a.django-menus-clicked { opacity: .65; cursor: default; }</code></pre>
+    <p>
+        Style the appearance only. <code>pointer-events: none</code> looks like the obvious choice
+        and lets the click fall <em>through</em> to whatever sits underneath, which inside a
+        dropdown is another menu item &mdash; and the click is already stopped in JS, so the class
+        only has to look the part. It clears when the hold expires, so a navigation that never
+        arrives cannot leave a link looking permanently dead.
     </p>
 
     <h5>Using it</h5>

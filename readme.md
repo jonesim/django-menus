@@ -66,5 +66,21 @@ are out of scope here.
 If you override these templates with your own copies, carry the `django-menus-item` class across
 or those menus will not be covered.
 
+### Showing that the click registered
+
+While a link is held it carries a `django-menus-clicked` class. Swallowing the second click stops
+the duplicate request, but people double-click *because* the first click appeared to do nothing,
+so the class is there to let you address the cause as well:
+
+    a.django-menus-clicked { opacity: .65; cursor: default; }
+
+No styling is shipped for it, so it does nothing until a project adds a rule. Style the
+appearance only - `pointer-events: none` looks like the obvious choice and lets the click fall
+*through* to whatever sits underneath, which inside a dropdown is another menu item. The click is
+already stopped in JS; the class only has to look the part.
+
+The class is cleared when the hold expires, so a navigation that never arrives - cancelled, a
+download, a `target="_blank"` - cannot leave a link looking permanently dead.
+
 This is defence in depth, not a substitute for making such a view idempotent - the back button, a
 refresh and a second tab all still send the request twice.

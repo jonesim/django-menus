@@ -283,6 +283,11 @@ function get_ajax_dropdown_menu(button, dropdownViewName, value) {
  * shift/alt, or any button but the primary) are also left alone: they open the link elsewhere
  * and leave this page where it is.
  *
+ * While a link is held it carries a django-menus-clicked class, so a project can show that the
+ * click registered. That matters: people double-click because the first click appeared to do
+ * nothing, so swallowing the second one treats the symptom and leaves the cause. No styling is
+ * shipped for it - see the readme.
+ *
  * Delegated from the document, so it also covers items rendered into the page later - an ajax
  * tooltip's contents, a context menu, a menu replaced by an ajax response. A project that
  * overrides these templates with its own copies needs to carry the marker class across for
@@ -339,6 +344,25 @@ $(document).on('click', 'a.django-menus-item', function (event) {
         return;
     }
     $(this).data('django-menus-clicked-at', now);
+
+    // Mark it while it is held, so a project can show the user something happened - which is the
+    // half of this problem the swallow does not address: people double-click precisely because
+    // the first click appeared to do nothing.
+    //
+    // A class rather than a look. What a held link should look like is the project's decision,
+    // nothing is shipped for it, and so by default this is invisible - see the readme for the
+    // rule to add. Style the appearance only: pointer-events: none looks tempting and lets the
+    // click fall THROUGH to whatever sits underneath, which inside a dropdown is another menu
+    // item. The handler above already stops the click; the class only has to look the part.
+    //
+    // Cleared on a timer, because a navigation that never arrives - cancelled, a download, a
+    // target="_blank" - must not leave a link looking permanently dead. In the ordinary case the
+    // page is replaced long before this fires.
+    var anchor = $(this);
+    anchor.addClass('django-menus-clicked');
+    setTimeout(function () {
+        anchor.removeClass('django-menus-clicked');
+    }, hold_ms);
 });
 
 $(window).on('pageshow', function (event) {
@@ -359,5 +383,5 @@ $(window).on('pageshow', function (event) {
     } else if (!held.length) {
         return;
     }
-    held.removeData('django-menus-clicked-at');
+    held.removeData('django-menus-clicked-at').removeClass('django-menus-clicked');
 });
