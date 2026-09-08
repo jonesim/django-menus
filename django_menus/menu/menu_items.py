@@ -7,6 +7,23 @@ from django.urls import reverse, resolve, Resolver404
 from django.utils.safestring import mark_safe
 
 
+REPEAT_CLICK_ATTRIBUTE = 'data-django-menus-repeat-ms'
+
+
+def coerce_repeat_click_ms(value, source):
+    """Milliseconds as an int, with an error that names the knob rather than int()'s.
+
+    Fails loudly rather than reading a typo as "off": this is set once in code, and a page that
+    silently stopped guarding a link would be far harder to notice than an exception.
+    """
+    if isinstance(value, bool):
+        raise TypeError(f'{source} takes milliseconds, not a boolean - use 0 to turn it off')
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValueError(f'{source} takes milliseconds as a number, not {value!r}') from None
+
+
 class MenuItemBadge:
 
     def __init__(self, badge_id=None, format_function=None, text=None, css_class=None):
@@ -161,12 +178,33 @@ class MenuItem(BaseMenuItem):
     def menu(self):
         return self._menu
 
+    def _apply_menu_repeat_click_ms(self):
+        """Take the menu's repeat-click window wherever this item has not set its own.
+
+        Called from __init__ as well as from the menu setter, because HtmlMenu.add_item passes
+        menu= to the constructor and so never runs the setter - which is how the tuple and string
+        shorthands used to miss out on a menu-level value entirely while MenuItem objects got it.
+        """
+        menu_ms = getattr(self._menu, 'django_menus_repeat_click_ms', None)
+        if menu_ms is None:
+            return
+        if REPEAT_CLICK_ATTRIBUTE not in self._attributes:
+            self._attributes[REPEAT_CLICK_ATTRIBUTE] = coerce_repeat_click_ms(
+                menu_ms, 'HtmlMenu(django_menus_repeat_click_ms=...)'
+            )
+        # A dropdown is an HtmlMenu of its own, built before this runs and with no link back, so
+        # it does not inherit on its own account. It has to, because the item a user actually
+        # clicks is inside the dropdown - the toggle carrying it goes nowhere.
+        if self.dropdown is not None and self.dropdown.django_menus_repeat_click_ms is None:
+            self.dropdown.django_menus_repeat_click_ms = menu_ms
+            for item in self.dropdown.menu_items:
+                if hasattr(item, '_apply_menu_repeat_click_ms'):
+                    item._apply_menu_repeat_click_ms()
+
     @menu.setter
     def menu(self, menu):
         self._menu = menu
-        menu_repeat_ms = getattr(menu, 'django_menus_repeat_click_ms', None)
-        if menu_repeat_ms is not None and 'data-django-menus-repeat-ms' not in self._attributes:
-            self._attributes['data-django-menus-repeat-ms'] = int(menu_repeat_ms)
+        self._apply_menu_repeat_click_ms()
         if menu.button_defaults and self.name in menu.button_defaults:
             self.menu_display = menu.button_defaults[self.name]
             if not isinstance(self.menu_display, MenuItemDisplay):
@@ -179,7 +217,11 @@ class MenuItem(BaseMenuItem):
 
     @staticmethod
     def attr(attributes, tooltip):
-        attributes = {} if attributes is None else attributes
+        # Copied, not adopted. This is stored as the item's own _attributes and then written to -
+        # a tooltip adds three keys, a repeat-click window adds one - so keeping the caller's
+        # dict meant an `attributes=` dict shared between items, or held at module level, picked
+        # those up and passed them to every other item using it, for the life of the process.
+        attributes = {} if attributes is None else dict(attributes)
         if tooltip:
             attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
         return attributes
@@ -207,7 +249,9 @@ class MenuItem(BaseMenuItem):
         # page, which is the point: the item that minds being clicked twice is usually the one
         # that knows it. 0 opts an item out again where the page has it on.
         if django_menus_repeat_click_ms is not None:
-            self._attributes['data-django-menus-repeat-ms'] = int(django_menus_repeat_click_ms)
+            self._attributes[REPEAT_CLICK_ATTRIBUTE] = coerce_repeat_click_ms(
+                django_menus_repeat_click_ms, 'MenuItem(django_menus_repeat_click_ms=...)'
+            )
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = getattr(self.resolved_url.func, 'view_class', None)
@@ -246,6 +290,10 @@ class MenuItem(BaseMenuItem):
             self.default_render = False
         else:
             self.default_render = True
+
+        # Last, because it needs self.dropdown. Covers the add_item path, where menu= arrives as
+        # a constructor argument and the property setter never runs.
+        self._apply_menu_repeat_click_ms()
 
     def attributes(self):
         attributes = {}

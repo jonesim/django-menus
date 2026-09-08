@@ -347,7 +347,10 @@ class RepeatClickExamples(MainMenu):
             # A javascript: item is never held, however short the gap: the page has not gone
             # anywhere, so a second click is not a repeat of a navigation - it is a second
             # action, which is usually exactly what the user wants (close a modal, reopen it).
-            MenuItem("alert('Clicked. A javascript: item is never held.')",
+            # Bumps a counter in the page rather than calling alert(). A modal dialog makes
+            # the browser discard pointer input while it is open, so the second click of a
+            # double-click never lands and this would appear to be held when it is not.
+            MenuItem("$('#js-clicks').text(Number($('#js-clicks').text()) + 1)",
                      'A javascript: item',
                      link_type=MenuItem.JAVASCRIPT,
                      css_classes='btn-outline-secondary'),

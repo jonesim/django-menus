@@ -309,7 +309,8 @@ $(document).on('click', 'a.django-menus-item', function (event) {
     // has it on. jQuery has already turned the attribute into a number.
     var item_ms = $(this).data('djangoMenusRepeatMs');
     // Number() so junk reads as off rather than as NaN comparisons that quietly never fire:
-    // 0, a negative, a non-numeric string and true all fail this.
+    // 0, a negative, null and a non-numeric string all fail this. (true would read as a 1ms
+    // hold, i.e. effectively off; the Python side rejects it outright with a message.)
     var hold_ms = Number(item_ms === undefined ? django_menus_repeat_click_ms : item_ms);
     if (!(hold_ms > 0)) {
         return;

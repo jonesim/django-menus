@@ -31,7 +31,9 @@ class HtmlMenu:
         # page (the view's repeat_click_ms) -> off.
         self.django_menus_repeat_click_ms = django_menus_repeat_click_ms
         self.menu_items = []
-        self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
+        # dict(), or the update below writes straight into the settings dict and every
+        # button_defaults= passed anywhere becomes a permanent, process-wide default.
+        self.button_defaults = dict(getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {}))
         if button_defaults is not None:
             self.button_defaults.update(button_defaults)
 
@@ -129,8 +131,12 @@ class MenuMixin:
         """The <script> that carries this view's menu settings into the page."""
         if not self.repeat_click_ms:
             return ''
-        return mark_safe(render_to_string(self.script_template,
-                                          context={'repeat_click_ms': int(self.repeat_click_ms)}))
+        from django_menus.menu.menu_items import coerce_repeat_click_ms
+
+        return mark_safe(render_to_string(
+            self.script_template,
+            context={'repeat_click_ms': coerce_repeat_click_ms(self.repeat_click_ms, 'repeat_click_ms')},
+        ))
 
     def add_menu(self, menu_name, menu_type=None, **kwargs):
         request = getattr(self, 'request', None)

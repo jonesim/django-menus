@@ -30,8 +30,17 @@ the milliseconds to hold a link for, at whichever level fits. They cascade
     class MyView(MenuTemplateView):
         repeat_click_ms = 2000
 
+A target view can also declare it, which is arguably the best place - the view that minds being
+called twice is the thing that knows:
+
+    class MyView(View):
+        menu_config = {'attributes': {'data-django-menus-repeat-ms': 2000}}
+
+That sits below the item and menu arguments, which are set at the call site and so win.
+
 Because an item's own value wins, one item can be held on a page with the guard off, and
-`django_menus_repeat_click_ms=0` on an item opts it out where the page has it on.
+`django_menus_repeat_click_ms=0` on an item opts it out where the page has it on. A menu-level
+value also reaches the items of a dropdown built on one of that menu's items.
 
 The first two forms render a `data-django-menus-repeat-ms` attribute on the anchor and need
 nothing else. The view attribute reaches the page through the `django_menus_script` context

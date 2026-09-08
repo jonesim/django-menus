@@ -43,9 +43,14 @@
     <div class="mb-2">
         {{ menus.whole_menu.render }}
     </div>
-    <div class="mb-4">
+    <div class="mb-2">
         {{ menus.extras.render }}
     </div>
+    <p class="mb-4">
+        <small class="text-muted">
+            <em>A javascript: item</em> clicked <span id="js-clicks">0</span> times
+        </small>
+    </p>
 
     <h5>This page</h5>
     <p>
@@ -104,7 +109,8 @@
         Also worth trying: click a held button once, wait for the page to come back, then click it
         again &mdash; it counts each time, because only a <em>repeat</em> of a click already
         navigating is dropped, never a deliberate second one. And double-click
-        <em>A javascript: item</em>: two alerts, because the page never went anywhere.
+        <em>A javascript: item</em>: its counter goes up by two, because the page never went
+        anywhere, so nothing is held however fast you click.
     </p>
 
     <h5>Showing that the click registered</h5>
