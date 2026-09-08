@@ -1,5 +1,11 @@
 <script>
     document.onkeydown = function (e) {
+        // Holding a shortcut down fires keydown over and over, and each one used to follow the
+        // link again - the same duplicate GET a double-click sends, from the keyboard, and one
+        // the repeat-click guard cannot see because click_href builds a fresh anchor every time.
+        if (e.repeat) {
+            return;
+        }
         if (django_modal === undefined || django_modal.active_modal_container_id() === "modal-0") {
             var key_dict = {{ key_dict|safe }};
             var is_mac = false;

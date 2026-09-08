@@ -25,9 +25,15 @@ class HtmlMenu:
     }
 
     def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
-                 placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False):
+                 placement=None, no_hover=False, button_defaults=None, alignment=None, compare_full_path=False,
+                 django_menus_repeat_click_ms=None):
+        # Applied to every item in this menu that has not set its own. Cascades item -> menu ->
+        # page (the view's repeat_click_ms) -> off.
+        self.django_menus_repeat_click_ms = django_menus_repeat_click_ms
         self.menu_items = []
-        self.button_defaults = getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {})
+        # dict(), or the update below writes straight into the settings dict and every
+        # button_defaults= passed anywhere becomes a permanent, process-wide default.
+        self.button_defaults = dict(getattr(settings, 'DJANGO_MENUS_BUTTON_DEFAULTS', {}))
         if button_defaults is not None:
             self.button_defaults.update(button_defaults)
 
@@ -90,7 +96,7 @@ class HtmlMenu:
             if getattr(i, 'key', None):
                 key_list = [i.key] if isinstance(i.key, str) else i.key
                 for key in key_list:
-                    key_data = {'shift': False, 'alt': False, 'href': i.href()}
+                    key_data = {'shift': False, 'alt': False, 'href': i.href(with_target=False)}
                     for k in key.split('-'):
                         if k.lower() == 'shift':
                             key_data['shift'] = True
@@ -109,6 +115,29 @@ class HtmlMenu:
 
 class MenuMixin:
 
+    # Milliseconds to hold a menu link for after it is clicked, so that a double-click on an item
+    # pointing at a view which DOES something reaches it once instead of twice. 0 is off, and off
+    # is the default: swallowing a click is a behaviour change, and whether a project has items
+    # like that is the project's business.
+    #
+    # Set it on a view for one page, or on a base view class for a whole site. It is rendered by
+    # the django_menus_script context variable, so a template has to output that - see the readme.
+    # It only ever sets the JS window of the same name, so it can still be changed at runtime.
+    repeat_click_ms = 0
+
+    script_template = 'django_menus/script.html'
+
+    def django_menus_script(self):
+        """The <script> that carries this view's menu settings into the page."""
+        if not self.repeat_click_ms:
+            return ''
+        from django_menus.menu.menu_items import coerce_repeat_click_ms
+
+        return mark_safe(render_to_string(
+            self.script_template,
+            context={'repeat_click_ms': coerce_repeat_click_ms(self.repeat_click_ms, 'repeat_click_ms')},
+        ))
+
     def add_menu(self, menu_name, menu_type=None, **kwargs):
         request = getattr(self, 'request', None)
         if menu_type:
@@ -125,6 +154,7 @@ class MenuMixin:
         else:
             context = {}
         context['menus'] = self.menus
+        context['django_menus_script'] = self.django_menus_script()
         return context
 
     def setup_menu(self):

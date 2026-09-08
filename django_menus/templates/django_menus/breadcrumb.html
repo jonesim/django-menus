@@ -8,7 +8,7 @@
                     {% else %}
                         <li class="breadcrumb-item">
                             <a href="{{ value.href }}"
-                               class="{{ value.css }}" {{ value.attributes }}>{{ value.name }}{{ value.badge }}</a>
+                               class="django-menus-item {{ value.css }}" {{ value.attributes }}>{{ value.name }}{{ value.badge }}</a>
                         </li>
                     {% endif %}
                 {% else %}
