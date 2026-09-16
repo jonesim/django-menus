@@ -26,8 +26,13 @@ class AjaxMenuTabs(AjaxMenuTemplateView):
         for c in self.ajax_response_commands:
             if c.type == self.TEMPLATE_CONTENT:
                 html = context[c.name]
-            else:
+            elif c.name in self.menus:
                 html = self.menus[c.name].render()
+            else:
+                # A menu the view only builds for some pages - a tab strip that appears once a
+                # record has more than one of something, say. It is not on the page to be replaced,
+                # and looking it up here raised a KeyError on every refresh of the pages without it.
+                continue
             self.add_command('html', selector='#' + c.name, html=html)
 
     def __init__(self, *args, **kwargs):
