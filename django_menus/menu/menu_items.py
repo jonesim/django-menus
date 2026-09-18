@@ -256,9 +256,18 @@ class MenuItem(BaseMenuItem):
                 attributes.update(self.external_function(self.menu_config['attributes']))
         attributes.update(self._attributes)
         attributes.update(self.menu_display.attributes())
+        self.add_accessible_name(attributes)
         if attributes:
             return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
         return ''
+
+    def add_accessible_name(self, attributes):
+        """Use the tooltip as aria-label when the item shows only an icon (never overriding one passed in)."""
+        if attributes.get('aria-label') or self.menu_display.text:
+            return
+        label = attributes.get('title') or self.menu_display.tooltip
+        if label:
+            attributes['aria-label'] = label
 
     @property
     def name(self):
