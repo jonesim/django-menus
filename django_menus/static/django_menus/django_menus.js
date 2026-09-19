@@ -1,3 +1,17 @@
+var create_popper = function create_popper(reference, menu, placement) {
+    // Popper 1 and Popper 2 have different entry points and different argument types.
+    // ajax_helpers loads Popper 1 (includes.py pins popper.js 1.16.1) on both the Bootstrap 4
+    // and the Bootstrap 5 path -- Bootstrap 5's bundle keeps its own Popper 2 private and
+    // never touches window.Popper -- so `new Popper` is what normally runs. The branch is for
+    // a project that brings Popper 2 itself, where the constructor does not exist and Popper 2
+    // wants raw elements rather than jQuery objects.
+    if (typeof Popper.createPopper === 'function') {
+        return Popper.createPopper(reference[0], menu[0], {placement: placement});
+    }
+    return new Popper(reference, menu, {placement: placement});
+};
+
+
 var dropdown_menu_function = function dropdown_menu_function(reference) {
   var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
     var menu = $('#' + reference.attr('id') + '-menu');
@@ -17,7 +31,7 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
             // Popper built before the menu is visible lays it out with no width and cannot see
             // that it overflows the window.
             if (pop == undefined) {
-                pop = new Popper(reference, menu, {placement: placement});
+                pop = create_popper(reference, menu, placement);
             } else {
                 pop.update();
             }
@@ -73,7 +87,7 @@ var dropdown_menu_click = function dropdown_menu_click(reference) {
             // that it overflows the window. Updated on every reopen because the page can have
             // been laid out again since the Popper was built.
             if (pop == undefined) {
-                pop = new Popper(reference, menu, {placement: placement})
+                pop = create_popper(reference, menu, placement)
             } else {
                 pop.update()
             }

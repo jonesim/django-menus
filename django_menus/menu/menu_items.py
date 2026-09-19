@@ -19,7 +19,14 @@ class MenuItemBadge:
         if self.format_function:
             self.format_function(self)
         if self.text:
-            return mark_safe(f'&nbsp;<sup><span class="badge badge-pill badge-{self.css_class}">{self.text}</span></sup>')
+            # Both spellings at once, since an unrecognised class is inert in either version.
+            # The pill shape is badge-pill rounded-pill; the colour is the caller's css_class
+            # spelled for both. Bootstrap 5 gets the text-bg- prefix rather than the bare bg-
+            # form django-cards pairs with: on a light colour such as warning, bg- alone
+            # leaves Bootstrap 5's white button text on a yellow ground, and the longer
+            # prefix picks the contrasting foreground to go with it.
+            return mark_safe(f'&nbsp;<sup><span class="badge badge-pill rounded-pill '
+                             f'badge-{self.css_class} text-bg-{self.css_class}">{self.text}</span></sup>')
         return ''
 
     def __str__(self):
@@ -178,7 +185,10 @@ class MenuItem(BaseMenuItem):
     def attr(attributes, tooltip):
         attributes = {} if attributes is None else attributes
         if tooltip:
-            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
+            # data-placement is Bootstrap 4's, data-bs-placement Bootstrap 5's; carrying both
+            # means the tooltip is placed the same way whichever version reads it.
+            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip',
+                               'data-placement': 'bottom', 'data-bs-placement': 'bottom'})
         return attributes
 
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
