@@ -1,0 +1,3 @@
+<a {% if menu_item.dropdown %}id="{{ menu_item.dropdown.id }}"{% endif %} href="{{ menu_item.href }}"
+   class="btn {{ menu_item.css|default:"btn-primary" }}{% if menu_item.active %} active{% endif %}" {{ menu_item.attributes }}>
+    <span {% if menu_item.show_caret %}class="dropdown-toggle"{% endif %}>{{ menu_item.name }}{{ menu_item.badge }}</span></a>

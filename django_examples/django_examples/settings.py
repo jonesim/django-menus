@@ -60,6 +60,10 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'django_examples.urls'
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
+# Normally just a pack name ('bootstrap4' or 'bootstrap5'). The example app serves both,
+# so it points at a callable that reads the version the nav bar toggle put in the session.
+DJANGO_MENUS_TEMPLATE_PACK = 'menu_examples.context_processors.template_pack_for_request'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

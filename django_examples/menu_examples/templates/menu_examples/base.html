@@ -19,10 +19,13 @@
     <nav class="navbar navbar-expand-lg bg-dark navbar-dark active-bar">
         {{ menus.main_menu.render }}
     </nav>
-    <div class="m-1 text-right text-end">
+    {# The example app's own chrome, spelled for whichever version this page is serving --
+       the menus themselves come from the matching django_menus template pack. #}
+    <div class="m-1 {% if bootstrap_version == '5' %}text-end{% else %}text-right{% endif %}">
      <img src="{{ version_img }}">
      {# Which Bootstrap this page is on, and a click to see it on the other one. #}
-     <a class="btn btn-outline-secondary btn-sm mr-1 me-1" href="{{ bootstrap_toggle_url }}"
+     <a class="btn btn-outline-secondary btn-sm {% if bootstrap_version == '5' %}me-1{% else %}mr-1{% endif %}"
+        href="{{ bootstrap_toggle_url }}"
         title="Currently Bootstrap {{ bootstrap_version }} -- switch to {{ bootstrap_other_version }}">
          BS{{ bootstrap_version }} &rarr; BS{{ bootstrap_other_version }}</a>
       <a class="btn btn-outline-secondary btn-sm" href="{{ home_page }}"><i class="fab fa-github text-dark"></i>GitHub</a>
@@ -32,7 +35,8 @@
 
 {% endblock %}
 <script>
-    // data-tooltip is django-menus' own marker, not Bootstrap's, so it needs no data-bs- twin.
+    // data-tooltip is django-menus' own marker and is the same in both packs; the attribute
+    // Bootstrap renamed is the placement one, which the pack supplies.
     // Bootstrap 5 registers .tooltip() only when jQuery loaded before it -- skip rather than
     // throw if that order is ever broken, so the rest of the page still runs.
     if (typeof $.fn.tooltip === 'function') {
