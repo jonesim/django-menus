@@ -2,7 +2,13 @@
 {% load static ajax_helpers src_code %}
 <html>
 <head>
+    {% if bootstrap_version == '5' %}
+    {# jQuery and Popper first, then Bootstrap 5 -- see menu_examples/includes.py for why. #}
+    {% lib_include 'ajax_helpers' 'FontAwesome' module='ajax_helpers.includes' %}
+    {% lib_include 'bootstrap5' module='menu_examples.includes' %}
+    {% else %}
     {% lib_include 'ajax_helpers' 'Bootstrap' 'FontAwesome' module='ajax_helpers.includes' %}
+    {% endif %}
     {% lib_include module='django_menus.includes' %}
     {% lib_include module='show_src_code.includes' %}
     {% lib_include 'Modals' module='django_modals.includes' %}
@@ -13,8 +19,15 @@
     <nav class="navbar navbar-expand-lg bg-dark navbar-dark active-bar">
         {{ menus.main_menu.render }}
     </nav>
-    <div class="m-1 text-right">
+    {# The example app's own chrome, spelled for whichever version this page is serving --
+       the menus themselves come from the matching django_menus template pack. #}
+    <div class="m-1 {% if bootstrap_version == '5' %}text-end{% else %}text-right{% endif %}">
      <img src="{{ version_img }}">
+     {# Which Bootstrap this page is on, and a click to see it on the other one. #}
+     <a class="btn btn-outline-secondary btn-sm {% if bootstrap_version == '5' %}me-1{% else %}mr-1{% endif %}"
+        href="{{ bootstrap_toggle_url }}"
+        title="Currently Bootstrap {{ bootstrap_version }} -- switch to {{ bootstrap_other_version }}">
+         BS{{ bootstrap_version }} &rarr; BS{{ bootstrap_other_version }}</a>
       <a class="btn btn-outline-secondary btn-sm" href="{{ home_page }}"><i class="fab fa-github text-dark"></i>GitHub</a>
      {% show_src_code 'show_src_code:source_code_modal' view_class %}
     </div>
@@ -22,11 +35,15 @@
 
 {% endblock %}
 <script>
-    $(document).ready(function () {
-        $(function () {
-              $('[data-tooltip="tooltip"]').tooltip()
+    // data-tooltip is django-menus' own marker and is the same in both packs; the attribute
+    // Bootstrap renamed is the placement one, which the pack supplies.
+    // Bootstrap 5 registers .tooltip() only when jQuery loaded before it -- skip rather than
+    // throw if that order is ever broken, so the rest of the page still runs.
+    if (typeof $.fn.tooltip === 'function') {
+        $(document).ready(function () {
+            $('[data-tooltip="tooltip"]').tooltip()
         })
-    })
+    }
 </script>
 </body>
 </html>

@@ -1,0 +1,20 @@
+{% spaceless %}
+<div id='{{ menu.id }}-menu' class="dropdown-menu" role="menu">
+    {% for i in menu.visible_items %}
+        {% if i.default_render %}
+            <a  class="dropdown-item {{ i.css }}" href="{{ i.href }}" {{ i.attributes }}>{{ i.name }}</a>
+        {% else %}
+            {{ i.render }}
+        {% endif %}
+    {% endfor %}
+</div>
+
+<script>
+    {% if menu.no_hover  %}
+        dropdown_menu_click($('#{{ menu.id }}'), '{{ menu.placement }}')
+    {% else %}
+        dropdown_menu_function($('#{{ menu.id }}'), '{{ menu.placement }}')
+    {% endif %}
+</script>
+{% endspaceless %}
+
