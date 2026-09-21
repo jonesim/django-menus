@@ -16,7 +16,11 @@ from django.core.exceptions import ImproperlyConfigured
 
 try:
     from ajax_helpers.config import get_css_framework
+    #: ajax-helpers >= 1.0.0 draws tooltips with its own namespaced ``ah-*`` markup
+    AH_TOOLTIPS = True
 except ImportError:  # the 0.0.x line has no config module
+    AH_TOOLTIPS = False
+
     def get_css_framework():
         return getattr(settings, 'CSS_FRAMEWORK', 'bootstrap4')
 
@@ -67,3 +71,11 @@ def css_classes():
         _instances[name] = framework_class()
     return _instances[name]
 
+
+def tooltip_template(tooltip_class=None):
+    """Popup markup for ``ajax_helpers.tooltip`` — follows the ajax_helpers client, not Bootstrap."""
+    extra = f' {tooltip_class}' if tooltip_class else ''
+    if AH_TOOLTIPS:
+        return (f'<div class="ah-tooltip{extra}" role="tooltip">'
+                f'<div class="ah-arrow"></div><div class="ah-tooltip-inner"></div></div>')
+    return f'<div class="tooltip{extra}" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'

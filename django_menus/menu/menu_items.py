@@ -298,7 +298,8 @@ class MenuItem(BaseMenuItem):
     def render(self):
         if self.template is None:
             self.template = 'django_menus/single_button.html'
-        context = {'menu_item': self, 'css': css_framework.css_classes()}
+        context = {'menu_item': self, 'css': css_framework.css_classes(),
+                   'tooltip_template': mark_safe(css_framework.tooltip_template(self.kwargs.get('tooltip_class')))}
         context.update(self.kwargs)
         return render_to_string(self.template, context)
 
