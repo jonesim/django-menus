@@ -6,6 +6,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse, resolve, Resolver404
 from django.utils.safestring import mark_safe
 
+from .. import css_framework
+
 
 class MenuItemBadge:
 
@@ -19,7 +21,7 @@ class MenuItemBadge:
         if self.format_function:
             self.format_function(self)
         if self.text:
-            return mark_safe(f'&nbsp;<sup><span class="badge badge-pill badge-{self.css_class}">{self.text}</span></sup>')
+            return mark_safe(f'&nbsp;<sup><span class="{css_framework.css_classes().badge(self.css_class)}">{self.text}</span></sup>')
         return ''
 
     def __str__(self):
@@ -184,7 +186,8 @@ class MenuItem(BaseMenuItem):
     def attr(attributes, tooltip):
         attributes = {} if attributes is None else dict(attributes)
         if tooltip:
-            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
+            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip',
+                               css_framework.css_classes().data_prefix + 'placement': 'bottom'})
         return attributes
 
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
@@ -295,7 +298,9 @@ class MenuItem(BaseMenuItem):
     def render(self):
         if self.template is None:
             self.template = 'django_menus/single_button.html'
-        return render_to_string(self.template, dict(**{'menu_item': self}, **self.kwargs))
+        context = {'menu_item': self, 'css': css_framework.css_classes()}
+        context.update(self.kwargs)
+        return render_to_string(self.template, context)
 
     @staticmethod
     def get_additional_url_kwargs(url_kwargs, **kwargs):
