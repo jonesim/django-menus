@@ -468,6 +468,18 @@ self.add_menu('actions', 'button_group',
               button_defaults={'save': MenuItemDisplay('Save', 'fas fa-check', 'btn-outline-primary')})
 ```
 
+## Bootstrap 4 / 5
+
+Markup follows the `CSS_FRAMEWORK` setting shared with `django-ajax-helpers` (the same setting that decides what `{% lib_include %}` loads):
+
+```python
+CSS_FRAMEWORK = 'bootstrap5'   # default 'bootstrap4'
+```
+
+It switches navbar alignment (`ms-auto`/`me-auto`), button spacing, the context-menu caret, badge classes
+(`badge rounded-pill text-bg-<colour>`) and tooltip `data-bs-placement`. Custom menu templates receive the active class set
+as `css`, e.g. `{{ css.align_end }}`. Bootstrap 5 needs django-ajax-helpers 1.0.0.
+
 ## Template Tags
 
 ```html

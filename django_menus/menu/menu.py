@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.views.generic import TemplateView, View
 
+from ..css_framework import css_classes
 from .menu_items import MenuItem, BaseMenuItem
 
 
@@ -105,7 +106,7 @@ class HtmlMenu:
             return ''
         keyboard = render_to_string(self.key_press_template,
                                     context={'key_dict': json.dumps(key_dict)}) if key_dict else ''
-        return mark_safe(render_to_string(self.template, context={'menu': self}) + extra_menus + keyboard)
+        return mark_safe(render_to_string(self.template, context={'menu': self, 'css': css_classes()}) + extra_menus + keyboard)
 
 
 class MenuMixin:

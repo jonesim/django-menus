@@ -119,12 +119,13 @@ Part of a cross-package migration (summary in `X:\CLAUDE.md`). Status here: **ba
 - Must be converted **together with** `templates/django_menus/dropdown.html:14,16` — those call sites pass a jQuery object (`$('#{{ menu.id }}')`) into the JS functions; change them to pass an element or id.
 - Popper v1 → Popper v2 (`Popper.createPopper`) or pure CSS positioning; coordinate with whatever ajax_helpers ends up bundling (it currently ships Popper 1.16.1).
 
-### Remaining — Bootstrap 5
-Dropdowns and tabs never used Bootstrap's JS plugins (custom JS + ajax_helpers commands throughout), so there is no `data-bs-*` attribute work — it is class renames plus one structural item:
-- `main_menu.html:2` `ml-auto`/`mr-auto` → `ms-auto`/`me-auto`; `button_menu.html:6` `mr-1` → `me-1`; `context_menu.html:6` `float-right` → `float-end`.
-- `menu_items.py:22` — `MenuItemBadge` emits `badge badge-pill badge-{colour}`; BS5 needs `badge rounded-pill text-bg-{colour}`. This is the highest-impact change because the colour is caller-supplied, so it needs a Bootstrap-version switch — **no BS-version setting exists in this package yet**; adopt the same mechanism as django-modals (`MODALS_CSS_FRAMEWORK`).
-- `ajax_tooltip.html:6` uses BS4 tooltip markup (`.tooltip`/`.arrow`/`.tooltip-inner`) — ajax_helpers' rewritten tooltip now uses namespaced `ah-tooltip`/`ah-arrow`/`ah-tooltip-inner`; update to match.
-- `static/django_menus/django_menus.css` targets `.navbar-dark` (deprecated in BS 5.3) — cosmetic.
+### Bootstrap 5 — done (branch `bootstrap5`, based on `menu-registry`)
+**`css_framework.py`** — the framework comes from the ecosystem-wide `CSS_FRAMEWORK` setting via `ajax_helpers.config.get_css_framework()` (falls back to reading the setting directly on ajax-helpers 0.0.x, which has no `config` module). No package-specific setting. Pattern borrowed from django-modals' `field_render.py`: `Bootstrap4Classes` holds class-name tokens, `Bootstrap5Classes` overrides only what differs, `FRAMEWORKS` maps name → class, `css_classes()` returns a cached instance.
+- Templates receive the instance as `css` (`HtmlMenu.render`, `MenuItem.render`): `{{ css.align_start }}`/`{{ css.align_end }}` (main_menu), `{{ css.button_spacing }}` (button_menu), `{{ css.float_end }}` (context_menu). Custom templates still get `menu`/`menu_item` as before.
+- Python-built markup: `MenuItemBadge` → `css_classes().badge(colour)`; `MenuItem.attr()` tooltip placement → `data-placement` / `data-bs-placement`.
+- `ajax_tooltip.html` gets `tooltip_template` from `css_framework.tooltip_template()` — keyed on the **ajax_helpers version** (`AH_TOOLTIPS`: 1.0.0 → `ah-tooltip`/`ah-arrow`/`ah-tooltip-inner`), not on Bootstrap.
+- Tests: `tests/test_css_framework.py`; BS4 output stays byte-identical (pinned by `test_regression.py`).
+- Left: `static/django_menus/django_menus.css` targets `.navbar-dark` (deprecated in BS 5.3) — cosmetic. BS5 mode drops jQuery from the ajax_helpers bundle, so dropdowns/context menus still need the jQuery work above.
 
 ## Releasing
 
