@@ -43,6 +43,10 @@ class ScanTests(RegistryTestCase):
     def test_ignores_views_without_an_entry(self):
         self.assertNotIn('HomeView', [s.view_class.__name__ for s in registry.specs('settings')])
 
+    def test_entries_are_not_inherited_by_subclasses(self):
+        found = [spec.view_class.__name__ for spec in registry.specs('settings')]
+        self.assertNotIn('ArchivedZebra', found)
+
     def test_namespaced_url_name_is_reconstructed(self):
         names = [spec.url_name for spec in registry.specs('support')]
         self.assertIn('phone_numbers:phone_numbers', names)

@@ -77,6 +77,14 @@ class ZebraSettings(BaseView):
     menu_entry = MenuEntry('settings')
 
 
+class ArchivedZebra(ZebraSettings):
+    """A subclass of a listed page, reachable under its own url name.
+
+    It declares no entry of its own, so it must not inherit Zebra's place in the menu.
+    """
+    menu_display = 'Archived Zebra'
+
+
 class AppleSettings(BaseView):
     menu_display = 'apple'
     menu_entry = MenuEntry('settings')

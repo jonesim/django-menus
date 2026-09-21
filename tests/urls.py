@@ -31,6 +31,7 @@ urlpatterns = [
 
     # registry fixtures - deliberately not in alphabetical order
     path('zebra/', views.ZebraSettings.as_view(), name='zebra'),
+    path('zebra/archived/', views.ArchivedZebra.as_view(), name='zebra_archived'),
     path('apple/', views.AppleSettings.as_view(), name='apple'),
     path('mango/', views.MangoSettings.as_view(), name='mango'),
     path('staff-settings/', views.StaffSettings.as_view(), name='staff_settings'),
