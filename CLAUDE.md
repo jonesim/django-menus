@@ -59,6 +59,7 @@ Coverage is the menu registry plus a regression baseline pinning every `add_item
 
 **`registry.py`** — `MenuRegistry`-style module-level API that builds dropdown contents from `menu_entry` declarations on view classes, so each app owns its own menu entries instead of one central `setup_menu()`:
 - `MenuEntry(section, group=None, url_name=None, url_args=None, url_kwargs=None, display=None, order=None, **item_kwargs)` — the declaration, set as `menu_entry` on a view class (or a list of them for several sections). Pure data; it must never call `reverse()`/`resolve()`, because it is built at import time.
+- Entries are read from `view_class.__dict__`, never inherited. A listed page usually has archived/grouped/pk-taking subclasses reachable under their own url names, and inheriting would silently add a duplicate item for each; a subclass that should appear declares its own `MenuEntry`.
 - `MenuSpec` — one scanned `(entry, full url name, view class)` triple. `menu_item()` materialises it; that is the only place `MenuItem` is constructed.
 - `dropdown(section, request, *extra)` / `menu_item(section, request, *extra)` — build the section per request. `extra` items are caller-built `MenuItem`s (an `AJAX_BUTTON`, `admin:index`, anything the URLConf cannot describe) and sort by their display text alongside the registered ones.
 - `extra(item, group=..., order=..., sort_text=...)` — stamp `registry_group` / `registry_order` / `registry_sort_text` on a caller-built item.

@@ -357,8 +357,10 @@ The URLConf is walked once, lazily and cached; `MenuItem`s are built per request
 | `order` | Sort position, used when the section sets `sort: 'order'`. |
 | anything else | Passed to `MenuItem()` — `font_awesome`, `css_classes`, `key`, `tooltip`… |
 
-Set `menu_entry` to a list to put one view in several sections. `menu_entry` is inherited, so a
-subclass that should not appear must set `menu_entry = None`.
+Set `menu_entry` to a list to put one view in several sections. `menu_entry` is **not** inherited —
+a view is in the menu only if it declares one itself, so the archived, grouped and pk-taking
+subclasses of a listed page do not each add a duplicate item. A subclass that should appear as well
+declares a `MenuEntry` of its own.
 
 ### Section options
 
