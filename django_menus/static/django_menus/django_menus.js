@@ -1,3 +1,40 @@
+// One positioner for both Popper generations. Bootstrap 4 puts Popper 1 on the page as a
+// global constructor; Bootstrap 5 bundles Popper 2 privately and leaves `window.Popper` alone,
+// so under Bootstrap 5 the include loads @popperjs/core itself (includes.py) and this finds
+// `Popper.createPopper`. With neither present the menu is dropped straight below its button,
+// which is where `.dropdown-menu.show` puts it without any positioning at all.
+//
+// Returns an object with one method, `update()`, which lays the menu out now. Call it after
+// the menu is shown: a display:none element measures 0x0, so a layout done before the menu is
+// visible has no width to work with and cannot see that it overflows the window.
+function make_menu_popper(reference, menu, placement) {
+    var reference_el = reference.jquery ? reference[0] : reference;
+    var menu_el = menu.jquery ? menu[0] : menu;
+    if (typeof Popper !== 'undefined' && typeof Popper.createPopper === 'function') {
+        var instance = Popper.createPopper(reference_el, menu_el, {placement: placement});
+        return {
+            update: function () {
+                // Popper 2's update() is asynchronous (a promise settled on the next frame), so
+                // the menu would paint once where it last was before moving. forceUpdate() lays
+                // it out synchronously, which is what Popper 1's update() did.
+                instance.forceUpdate();
+            }
+        };
+    }
+    if (typeof Popper !== 'undefined') {
+        return new Popper(reference_el, menu_el, {placement: placement});
+    }
+    var at_end = placement.indexOf('end') > -1;
+    return {
+        update: function () {
+            menu_el.style.position = 'absolute';
+            menu_el.style.top = '100%';
+            menu_el.style.left = at_end ? 'auto' : '0';
+            menu_el.style.right = at_end ? '0' : 'auto';
+        }
+    };
+}
+
 var dropdown_menu_function = function dropdown_menu_function(reference) {
   var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
     var menu = $('#' + reference.attr('id') + '-menu');
@@ -13,14 +50,12 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
         if (reference.is(':hover')) {
             $('.menu-system.show').removeClass('show');
             menu.addClass('show menu-system');
-            // Positioned only once the menu is shown: a display:none element measures 0x0, so a
-            // Popper built before the menu is visible lays it out with no width and cannot see
-            // that it overflows the window.
+            // Positioned only once the menu is shown (see make_menu_popper), and laid out again on
+            // every show because the page can have changed since the positioner was built.
             if (pop == undefined) {
-                pop = new Popper(reference, menu, {placement: placement});
-            } else {
-                pop.update();
+                pop = make_menu_popper(reference, menu, placement);
             }
+            pop.update();
         }
         setTimeout(function () {
             if (!reference.is(':hover') && !menu.is(':hover') && !menu.hasClass('clicked')) {
@@ -68,15 +103,12 @@ var dropdown_menu_click = function dropdown_menu_click(reference) {
             menu.removeClass('show clicked')
         } else {
             menu.addClass('show clicked')
-            // Positioned only once the menu is shown: a display:none element measures 0x0, so a
-            // Popper built before the menu is visible lays it out with no width and cannot see
-            // that it overflows the window. Updated on every reopen because the page can have
-            // been laid out again since the Popper was built.
+            // Positioned only once the menu is shown (see make_menu_popper), and laid out again on
+            // every reopen because the page can have changed since the positioner was built.
             if (pop == undefined) {
-                pop = new Popper(reference, menu, {placement: placement})
-            } else {
-                pop.update()
+                pop = make_menu_popper(reference, menu, placement)
             }
+            pop.update()
         }
     })
 
