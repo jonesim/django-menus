@@ -52,6 +52,30 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
     });
 };
 
+// A click-opened menu closes when another opens, when the page is clicked anywhere outside it, and
+// on Escape. Not only on the button losing focus: Safari never focuses a link or button that is
+// clicked, so there focusout never fires, and every menu opened stayed open -- the next row's
+// menu opened on top of the last, which then covered the button below it.
+var close_clicked_menus = function close_clicked_menus(except) {
+    $('.dropdown-menu.clicked').not(except || $()).removeClass('show clicked');
+};
+
+$(document).on('click.dropdown_menu_click', function (e) {
+    $('.dropdown-menu.clicked').each(function () {
+        var menu = $(this);
+        var reference = $('#' + menu.attr('id').replace(/-menu$/, ''));
+        var inside = menu.is(e.target) || menu.has(e.target).length ||
+            reference.is(e.target) || reference.has(e.target).length;
+        if (!inside) {
+            menu.removeClass('show clicked');
+        }
+    });
+}).on('keydown.dropdown_menu_click', function (e) {
+    if (e.key === 'Escape') {
+        close_clicked_menus();
+    }
+});
+
 var dropdown_menu_click = function dropdown_menu_click(reference) {
   var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
     var menu = $('#' + reference.attr('id') + '-menu');
@@ -67,6 +91,7 @@ var dropdown_menu_click = function dropdown_menu_click(reference) {
         if (menu.hasClass('clicked')) {
             menu.removeClass('show clicked')
         } else {
+            close_clicked_menus(menu)
             menu.addClass('show clicked')
             // Positioned only once the menu is shown: a display:none element measures 0x0, so a
             // Popper built before the menu is visible lays it out with no width and cannot see
