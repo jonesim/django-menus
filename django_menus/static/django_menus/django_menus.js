@@ -231,3 +231,158 @@ function get_ajax_dropdown_menu(button, dropdownViewName, value) {
     // Call the post_json function with the new data
     ajax_helpers.post_json({'data': data});
 }
+
+
+/* Swallow a repeat click on a menu link that is already navigating.
+ *
+ * Every item this library renders is an <a href>, and a menu item can point at a view that DOES
+ * something rather than one that just shows a page. A double-click sends the URL twice, and a
+ * view that resolves "what should I act on" from its own current state rather than from the state
+ * the link was drawn against acts on both: in JMS Cloud, two clicks on the project timeline's
+ * "Go to Next Stage" moved a batch two stages on. Rather than every such view growing its own
+ * guard, a project can opt in here.
+ *
+ * OFF by default: swallowing a click is a behaviour change, and whether a project has menu items
+ * pointing at views that mind being called twice is the project's business, not this library's.
+ * Opt in with the milliseconds to hold a link for, at whichever level fits - they cascade
+ * item -> menu -> page -> off:
+ *
+ *     MenuItem('next_stage', 'Go to Next Stage', django_menus_repeat_click_ms=2000)
+ *     HtmlMenu(request, 'button_group', django_menus_repeat_click_ms=2000)
+ *     class MyView(MenuTemplateView):
+ *         repeat_click_ms = 2000
+ *
+ * The first two render data-django-menus-repeat-ms on the anchor; the last sets the window
+ * below. An item's own value wins, so one item can be held on a page with the guard off, and
+ * 0 on an item opts it out where the page has it on.
+ *
+ * Read on each click rather than captured at load, so it can be changed at any point in a page's
+ * life. An assignment made BEFORE this file loads survives too (see the initialiser below), so
+ * a project can set it either side of the include.
+ *
+ * Around 2000 is a sensible starting point. Note what that window is and is not: it collapses a
+ * double-click, which is the reported problem. It does not cover an impatient re-click several
+ * seconds into a slow response - holding a link until the page actually goes away would strand
+ * anything that deliberately leaves the page in place, like a download or a target="_blank".
+ *
+ * WHAT IS GUARDED, once on: any marked anchor whose href is not javascript: or a fragment, on an
+ * unmodified primary-button click. That is a real browser navigation, so the first click has
+ * already started one and a repeat can only duplicate it - which is what keeps this
+ * behaviour-neutral for an ordinary page link. A target="_blank" item is included even though
+ * the page stays put, because the duplicate REQUEST is the thing being prevented, not the
+ * navigation; the effect is one new tab per double-click instead of two.
+ *
+ * WHAT IS NOT: a javascript: href, because the page stays and clicking again straight away is
+ * often exactly what the user means - close a modal, reopen it. That covers AJAX_BUTTON,
+ * AJAX_COMMAND, JAVASCRIPT and AJAX_GET_URL_NAME items, a django-modals show_modal link, and
+ * anything disabled. Be aware this is a rule about the href, not a guarantee about the effect:
+ * a JAVASCRIPT item is free to set window.location itself, an AJAX_BUTTON's view can answer with
+ * a redirect command, and AJAX_GET_URL_NAME fetches a view and pushes state. Those reach a view
+ * twice on a double-click just the same and are deliberately out of scope here - a view behind
+ * one of them needs to be idempotent, or to do its own guarding. Modified clicks (ctrl/cmd/
+ * shift/alt, or any button but the primary) are also left alone: they open the link elsewhere
+ * and leave this page where it is.
+ *
+ * While a link is held it carries a django-menus-clicked class, so a project can show that the
+ * click registered. That matters: people double-click because the first click appeared to do
+ * nothing, so swallowing the second one treats the symptom and leaves the cause. No styling is
+ * shipped for it - see the readme.
+ *
+ * Delegated from the document, so it also covers items rendered into the page later - an ajax
+ * tooltip's contents, a context menu, a menu replaced by an ajax response. A project that
+ * overrides these templates with its own copies needs to carry the marker class across for
+ * those menus to be covered.
+ *
+ * This is defence in depth, NOT a substitute for making such a view idempotent. The back button,
+ * a refresh, a second tab, a page left open while someone else moved the record, and a click
+ * landing before this script has run all still send the request twice.
+ */
+
+// window.* rather than a bare 0, so an assignment made above the include is not clobbered when
+// this line runs. A plain `var x = 0` would silently switch the guard back off for a project
+// that set it first, which is the one mistake the "set it anywhere" contract invites.
+var django_menus_repeat_click_ms = window.django_menus_repeat_click_ms || 0;
+
+$(document).on('click', 'a.django-menus-item', function (event) {
+    // An item's own data-django-menus-repeat-ms wins over the page's window, so a single item
+    // can be held where the page has the guard off, and 0 on an item opts it out where the page
+    // has it on. jQuery has already turned the attribute into a number.
+    var item_ms = $(this).data('djangoMenusRepeatMs');
+    // Number() so junk reads as off rather than as NaN comparisons that quietly never fire:
+    // 0, a negative, null and a non-numeric string all fail this. (true would read as a 1ms
+    // hold, i.e. effectively off; the Python side rejects it outright with a message.)
+    var hold_ms = Number(item_ms === undefined ? django_menus_repeat_click_ms : item_ms);
+    if (!(hold_ms > 0)) {
+        return;
+    }
+    if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+        return;
+    }
+    // Something closer to the target has already cancelled the navigation - an inline onclick
+    // returning false, an element-bound handler. Nothing was started, so there is nothing to
+    // swallow, and arming here would eat the NEXT click: confirm() -> Cancel, then confirm() ->
+    // OK within the window, and the user's confirmed click goes nowhere.
+    if (event.isDefaultPrevented()) {
+        return;
+    }
+    // Trimmed because a browser trims before deciding what a href means, so a scheme sitting
+    // behind leading whitespace still counts as one.
+    var href = ($(this).attr('href') || '').replace(/^\s+/, '');
+    if (!href || href.charAt(0) === '#' || href.slice(0, 11).toLowerCase() === 'javascript:') {
+        return;
+    }
+    // new Date().getTime() rather than Date.now(): the latter is ES5.1, and this file is served
+    // as-is to whatever the project supports (django_menus declares no legacy_js build to fall
+    // back to), so there is no reason for this to be what raises the browser floor.
+    var now = new Date().getTime();
+    var clicked_at = $(this).data('django-menus-clicked-at');
+    if (clicked_at !== undefined && now - clicked_at < hold_ms) {
+        // preventDefault alone, deliberately. `return false` would also stop propagation, and
+        // jQuery runs directly-bound document handlers after delegated ones - so it would rob
+        // the dropdown/context-menu closers and Bootstrap's clearMenus of a click they should
+        // still see. Nothing here needs the click stopped, only the navigation.
+        event.preventDefault();
+        return;
+    }
+    $(this).data('django-menus-clicked-at', now);
+
+    // Mark it while it is held, so a project can show the user something happened - which is the
+    // half of this problem the swallow does not address: people double-click precisely because
+    // the first click appeared to do nothing.
+    //
+    // A class rather than a look. What a held link should look like is the project's decision,
+    // nothing is shipped for it, and so by default this is invisible - see the readme for the
+    // rule to add. Style the appearance only: pointer-events: none looks tempting and lets the
+    // click fall THROUGH to whatever sits underneath, which inside a dropdown is another menu
+    // item. The handler above already stops the click; the class only has to look the part.
+    //
+    // Cleared on a timer, because a navigation that never arrives - cancelled, a download, a
+    // target="_blank" - must not leave a link looking permanently dead. In the ordinary case the
+    // page is replaced long before this fires.
+    var anchor = $(this);
+    anchor.addClass('django-menus-clicked');
+    setTimeout(function () {
+        anchor.removeClass('django-menus-clicked');
+    }, hold_ms);
+});
+
+$(window).on('pageshow', function (event) {
+    // A page restored from the back/forward cache comes back with its jQuery data intact, so a
+    // link clicked just before navigating away would still be held - clicking Back and
+    // immediately clicking the same item again would do nothing. A restored page is a fresh
+    // start, so the timers go.
+    //
+    // Nothing can be holding a timer unless something opted in, and this is the only place the
+    // guard would touch the DOM while switched off, so it checks first: with no page-level
+    // window and no item carrying its own, a restore does no work here.
+    if (!event.originalEvent || !event.originalEvent.persisted) {
+        return;
+    }
+    var held = $('a.django-menus-item[data-django-menus-repeat-ms]');
+    if (Number(django_menus_repeat_click_ms) > 0) {
+        held = $('a.django-menus-item');
+    } else if (!held.length) {
+        return;
+    }
+    held.removeData('django-menus-clicked-at').removeClass('django-menus-clicked');
+});

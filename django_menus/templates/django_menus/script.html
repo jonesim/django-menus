@@ -1,0 +1,7 @@
+{% spaceless %}
+<script>
+    // window.* rather than a bare name so this works whether it lands above or below the
+    // django_menus include - the library initialises its own from window.
+    window.django_menus_repeat_click_ms = {{ repeat_click_ms }};
+</script>
+{% endspaceless %}
