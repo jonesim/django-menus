@@ -158,6 +158,12 @@ Bootstrap 4 stays the default because the rest of the stack still emits it. On t
 page the menus are correct and django-modals, show_src_code and crispy's template pack are
 not — the example app makes that visible rather than hiding it, and it is the remaining work.
 
+**Two settings, two paragraphs.** The template pack above is chosen by `DJANGO_MENUS_TEMPLATE_PACK`;
+the scripts a page loads are chosen by the ecosystem-wide `CSS_FRAMEWORK` that ajax-helpers reads
+(see the positioning section below). This paragraph describes Bootstrap 5 markup on a page whose
+`CSS_FRAMEWORK` is still `bootstrap4`, so ajax-helpers still loads jQuery and Popper 1. With both
+set to `bootstrap5`, ajax-helpers 1.0.1 loads neither and the menus include loads Popper 2 itself.
+
 **The one load-order requirement.** jQuery must load before Bootstrap 5, which is what
 `base.html` does. Bootstrap 5 dropped jQuery as a dependency and registers its plugin interface
 only when jQuery got there first; without it `ajax_helpers.tooltip` quietly does nothing. The
