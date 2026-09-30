@@ -1,6 +1,16 @@
-[![PyPI version](https://badge.fury.io/py/django-tab-menus.svg)](https://badge.fury.io/py/django-tab-menus)
+[![PyPI version](https://badge.fury.io/py/django-advanced-menus.svg)](https://badge.fury.io/py/django-advanced-menus)
 
-Django app to render menus and load tabs with Ajax
+# django-advanced-menus
+
+Django app to render menus and load tabs with Ajax.
+
+The [django-advance-utils](https://github.com/django-advance-utils) line of Ian Jones's
+[django-tab-menus](https://github.com/jonesim/django-menus), forked so that releases can be cut as
+the downstream libraries and django-advanced-report-builder need them. The Python package is still
+`django_menus`, so existing imports and `INSTALLED_APPS` entries do not change; only the pip name
+does. It depends on [ajax-advanced-helpers](https://github.com/django-advance-utils/ajax-advanced-helpers).
+
+    pip install django-advanced-menus
 
 See example django project with docker compose file 
 
@@ -136,7 +146,8 @@ definition, so it applies to both packs.
   MenuItem('view1', 'Edit', css_classes=['btn-primary', 'me-1'])
   ```
 
-`menu_key_press.html` stays outside the packs — it is a keyboard handler, not Bootstrap markup.
+`menu_key_press.html` and `script.html` stay outside the packs — one is a keyboard handler and the
+other sets the repeat-click window, neither is Bootstrap markup.
 
 **Running the examples on either version.** The nav bar carries a `BS4 → BS5` toggle; it puts
 `?bootstrap=5` on the URL and remembers the choice in the session, so a menu can be compared on

@@ -1,16 +1,18 @@
 import setuptools
 
-with open("readme.md", "r") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="django-tab-menus",
-    version="0.0.18",
+    name="django-advanced-menus",
+    version="0.1.0",
     author="Ian Jones",
+    maintainer="Thomas Turner",
     description="Django app to render menus and load tabs with Ajax",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/jonesim/django-menus",
+    url="https://github.com/django-advance-utils/django-advanced-menus",
+    project_urls={"Upstream": "https://github.com/jonesim/django-menus"},
     include_package_data = True,
     packages=['django_menus'],
     classifiers=[
@@ -19,5 +21,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=['django-ajax-helpers'],
+    install_requires=['ajax-advanced-helpers>=1.0.1'],
 )

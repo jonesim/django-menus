@@ -14,7 +14,7 @@ except ImportError:  # ajax-helpers 0.0.x has no framework switch and only ever 
 # identical - returning browsers would keep the file they already have and never run the new JS,
 # which is exactly the users who have been there before. (A consumer passing its own `version=`,
 # e.g. its git revision, busts the cache on every deploy and does not depend on this.)
-version = pip_version('django-tab-menus')
+version = pip_version('django-advanced-menus')
 
 
 class DjangoMenus(SourceBase):
