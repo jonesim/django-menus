@@ -1,6 +1,9 @@
 import datetime
+import threading
+import time
 
 from django.utils.safestring import mark_safe
+from django.views.generic.base import RedirectView
 from django_modals.helper import base64_json
 from django_modals.modals import Modal
 
@@ -23,6 +26,7 @@ def setup_main_menu(request):
         ('modal_examples', 'Modal Examples'),
         ('context_examples', 'Context Examples'),
         ('ajax_dropdown_menu_examples', 'Ajax-DropDown Menu Examples'),
+        ('repeat_click_examples', 'Repeat Clicks'),
     )
     return menu
 
@@ -269,6 +273,161 @@ class ContextMenu(ContextMenuMixin, MainMenu):
 
     def button_test_button(self, *args, **kwargs):
         return self.command_response('message', text='From view')
+
+
+class RequestCounter:
+    """Counts requests the bump view has received, for the repeat-click example below.
+
+    Deliberately NOT in the session. Two requests arriving together each read the session,
+    add one, and write it back, so one increment gets lost - which is a genuine race, but a
+    different one from the one this page is about, and it made the example quietly under-report
+    the double-click it exists to show. A process-global behind a lock counts what actually
+    arrived. Shared by everyone using the demo, which is fine for a demo and would not be for
+    anything else.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.hits = 0
+
+    def bump(self):
+        with self._lock:
+            self.hits += 1
+
+    def reset(self):
+        with self._lock:
+            self.hits = 0
+
+
+request_counter = RequestCounter()
+
+
+class RepeatClickExamples(MainMenu):
+    """The repeat-click guard OFF - the shipped default, and what a double-click costs without it.
+
+    A menu item usually points at a view that just shows a page, where clicking twice costs
+    nothing. Some point at a view that DOES something, and those are reached twice by a
+    double-click - the counter on this page is bumped by one of those.
+
+    The guard is opted into with a single view attribute, so the whole of the difference between
+    this page and the guarded one below is `repeat_click_ms`. Set it on a base view class instead
+    of one view and it applies to every page that inherits from it.
+    """
+
+    template_name = 'menu_examples/repeat_click_examples.html'
+    repeat_click_ms = 0
+
+    # Bumping redirects, and it has to come back to the page it was clicked on: the guarded and
+    # unguarded pages differ only by repeat_click_ms, so sending both back to one of them lands
+    # you on the wrong side of the comparison after the first click.
+    url_name = 'repeat_click_examples'
+
+    def setup_menu(self):
+        super().setup_menu()
+        self.menus['main_menu'].active = 'repeat_click_examples'
+        back_here = {'next': self.url_name}
+
+        # Three links to the same view. They behave differently because of one argument, which is
+        # the point of this menu: the value cascades item -> menu -> page, so an item can be held
+        # on a page with the guard off, and opted out on a page with it on.
+        self.add_menu('bump_menu', 'button_group').add_items(
+            MenuItem('bump_counter', 'Follows the page', font_awesome='fas fa-plus',
+                     query_string_params=back_here),
+            MenuItem('bump_counter', 'This item: held', font_awesome='fas fa-plus',
+                     django_menus_repeat_click_ms=2000,
+                     css_classes='btn-success',
+                     query_string_params=back_here),
+            MenuItem('bump_counter', 'This item: opted out', font_awesome='fas fa-plus',
+                     django_menus_repeat_click_ms=0,
+                     css_classes='btn-warning',
+                     query_string_params=back_here),
+        )
+
+        self.add_menu('extras', 'button_group').add_items(
+            # A javascript: item is never held, however short the gap: the page has not gone
+            # anywhere, so a second click is not a repeat of a navigation - it is a second
+            # action, which is usually exactly what the user wants (close a modal, reopen it).
+            # Bumps a counter in the page rather than calling alert(). A modal dialog makes
+            # the browser discard pointer input while it is open, so the second click of a
+            # double-click never lands and this would appear to be held when it is not.
+            MenuItem("$('#js-clicks').text(Number($('#js-clicks').text()) + 1)",
+                     'A javascript: item',
+                     link_type=MenuItem.JAVASCRIPT,
+                     css_classes='btn-outline-secondary'),
+            MenuItem('reset_counter', 'Reset', css_classes='btn-outline-danger',
+                     query_string_params=back_here),
+        )
+
+        # A whole menu can be set in one place instead, for when every item in it acts.
+        self.add_menu('whole_menu', 'button_group', django_menus_repeat_click_ms=2000).add_items(
+            MenuItem('bump_counter', 'Held by its menu', font_awesome='fas fa-plus',
+                     query_string_params=back_here),
+        )
+        self.add_menu('guard_switch', 'button_group').add_items(
+            MenuItem('repeat_click_examples', 'repeat_click_ms = 0',
+                     css_classes='btn-outline-primary'),
+            MenuItem('repeat_click_guarded', 'repeat_click_ms = 2000',
+                     css_classes='btn-outline-primary'),
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['bump_count'] = request_counter.hits
+        return context
+
+
+class RepeatClickGuarded(RepeatClickExamples):
+    """The same page with the guard ON. The attribute is the only difference."""
+
+    repeat_click_ms = 2000
+    url_name = 'repeat_click_guarded'
+
+
+class ReturnToCallerRedirect(RedirectView):
+    """Redirects back to whichever of the two example pages sent us here.
+
+    ?next= is matched against a fixed set of url names rather than reversed as given. A demo gets
+    copied, and reversing an arbitrary name from the query string - or worse, redirecting to a
+    raw URL from it - is how an open redirect gets into somebody's project.
+    """
+
+    allowed_next = ('repeat_click_examples', 'repeat_click_guarded')
+    pattern_name = 'repeat_click_examples'
+
+    def get_redirect_url(self, *args, **kwargs):
+        requested = self.request.GET.get('next')
+        if requested in self.allowed_next:
+            self.pattern_name = requested
+        return super().get_redirect_url(*args, **kwargs)
+
+
+class BumpCounter(ReturnToCallerRedirect):
+    """Stands in for a view that acts on a GET and then redirects back.
+
+    Deliberately NOT idempotent - it counts every request it is sent, so a double-click that
+    gets through shows up as two. That is the shape the guard is for; the real fix for a view
+    like this is to make it idempotent, and the guard is the layer in front of that.
+
+    And deliberately slow. The guard drops a click that repeats a navigation ALREADY UNDER WAY,
+    so there has to be a window in which one is. Answering this instantly on a local runserver
+    closes that window: the first navigation finishes before the second click of a double-click
+    lands, both then count whether the guard is on or off, and the page below demonstrates
+    nothing. A real server doing real work supplies the delay; here it is faked.
+    """
+
+    work_seconds = 1
+
+    def get_redirect_url(self, *args, **kwargs):
+        request_counter.bump()
+        time.sleep(self.work_seconds)
+        return super().get_redirect_url(*args, **kwargs)
+
+
+class ResetCounter(ReturnToCallerRedirect):
+
+    def get_redirect_url(self, *args, **kwargs):
+        request_counter.reset()
+        return super().get_redirect_url(*args, **kwargs)
 
 
 class TestModal(Modal):

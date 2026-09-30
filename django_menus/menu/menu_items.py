@@ -7,6 +7,23 @@ from django.urls import reverse, resolve, Resolver404
 from django.utils.safestring import mark_safe
 
 
+REPEAT_CLICK_ATTRIBUTE = 'data-django-menus-repeat-ms'
+
+
+def coerce_repeat_click_ms(value, source):
+    """Milliseconds as an int, with an error that names the knob rather than int()'s.
+
+    Fails loudly rather than reading a typo as "off": this is set once in code, and a page that
+    silently stopped guarding a link would be far harder to notice than an exception.
+    """
+    if isinstance(value, bool):
+        raise TypeError(f'{source} takes milliseconds, not a boolean - use 0 to turn it off')
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValueError(f'{source} takes milliseconds as a number, not {value!r}') from None
+
+
 class MenuItemBadge:
 
     def __init__(self, badge_id=None, format_function=None, text=None, css_class=None):
@@ -161,9 +178,33 @@ class MenuItem(BaseMenuItem):
     def menu(self):
         return self._menu
 
+    def _apply_menu_repeat_click_ms(self):
+        """Take the menu's repeat-click window wherever this item has not set its own.
+
+        Called from __init__ as well as from the menu setter, because HtmlMenu.add_item passes
+        menu= to the constructor and so never runs the setter - which is how the tuple and string
+        shorthands used to miss out on a menu-level value entirely while MenuItem objects got it.
+        """
+        menu_ms = getattr(self._menu, 'django_menus_repeat_click_ms', None)
+        if menu_ms is None:
+            return
+        if REPEAT_CLICK_ATTRIBUTE not in self._attributes:
+            self._attributes[REPEAT_CLICK_ATTRIBUTE] = coerce_repeat_click_ms(
+                menu_ms, 'HtmlMenu(django_menus_repeat_click_ms=...)'
+            )
+        # A dropdown is an HtmlMenu of its own, built before this runs and with no link back, so
+        # it does not inherit on its own account. It has to, because the item a user actually
+        # clicks is inside the dropdown - the toggle carrying it goes nowhere.
+        if self.dropdown is not None and self.dropdown.django_menus_repeat_click_ms is None:
+            self.dropdown.django_menus_repeat_click_ms = menu_ms
+            for item in self.dropdown.menu_items:
+                if hasattr(item, '_apply_menu_repeat_click_ms'):
+                    item._apply_menu_repeat_click_ms()
+
     @menu.setter
     def menu(self, menu):
         self._menu = menu
+        self._apply_menu_repeat_click_ms()
         if menu.button_defaults and self.name in menu.button_defaults:
             self.menu_display = menu.button_defaults[self.name]
             if not isinstance(self.menu_display, MenuItemDisplay):
@@ -176,7 +217,11 @@ class MenuItem(BaseMenuItem):
 
     @staticmethod
     def attr(attributes, tooltip):
-        attributes = {} if attributes is None else attributes
+        # Copied, not adopted. This is stored as the item's own _attributes and then written to -
+        # a tooltip adds three keys, a repeat-click window adds one - so keeping the caller's
+        # dict meant an `attributes=` dict shared between items, or held at module level, picked
+        # those up and passed them to every other item using it, for the life of the process.
+        attributes = {} if attributes is None else dict(attributes)
         if tooltip:
             attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
         return attributes
@@ -185,7 +230,7 @@ class MenuItem(BaseMenuItem):
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
-                 query_string_params=None, **kwargs):
+                 query_string_params=None, django_menus_repeat_click_ms=None, **kwargs):
         super().__init__(**kwargs, badge=badge)
         self.query_string_params = query_string_params
         self._resolved_url = None
@@ -199,6 +244,14 @@ class MenuItem(BaseMenuItem):
                 url = split_url[0]
         self._href = self.raw_href(url, url_args, url_kwargs, **kwargs)
         self._attributes = self.attr(attributes, tooltip)
+        # Milliseconds to hold THIS item for after it is clicked, overriding whatever the menu or
+        # the page has set - including turning the guard on for one item when it is off for the
+        # page, which is the point: the item that minds being clicked twice is usually the one
+        # that knows it. 0 opts an item out again where the page has it on.
+        if django_menus_repeat_click_ms is not None:
+            self._attributes[REPEAT_CLICK_ATTRIBUTE] = coerce_repeat_click_ms(
+                django_menus_repeat_click_ms, 'MenuItem(django_menus_repeat_click_ms=...)'
+            )
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = getattr(self.resolved_url.func, 'view_class', None)
@@ -237,6 +290,10 @@ class MenuItem(BaseMenuItem):
             self.default_render = False
         else:
             self.default_render = True
+
+        # Last, because it needs self.dropdown. Covers the add_item path, where menu= arrives as
+        # a constructor argument and the property setter never runs.
+        self._apply_menu_repeat_click_ms()
 
     def attributes(self):
         attributes = {}
@@ -332,7 +389,15 @@ class MenuItem(BaseMenuItem):
         elif isinstance(function_def, (list, tuple)):
             return function_def[0](self, *function_def[1:])
 
-    def href(self):
+    def href(self, with_target=True):
+        """The item's href, for rendering inside `href="..."`.
+
+        `with_target=False` for anywhere the result is used as a URL rather than dropped into
+        that attribute: a target is added by closing the attribute early and opening a second
+        one, so the return value is markup rather than a URL whenever an item has one. That is
+        fine in a template and wrong everywhere else - the keyboard-shortcut handler assigned it
+        to `a.href` and navigated to `/report.pdf" target="_blank`.
+        """
         if self.disabled:
             return 'javascript:void(0)'
         href = self._href
@@ -343,7 +408,7 @@ class MenuItem(BaseMenuItem):
                 href = self.external_function(self.menu_config['href_format'])
         elif self.link_type == self.AJAX_GET_URL_NAME:
             href = f"javascript: ajax_helpers.get_content('{href}')"
-        if self.target:
+        if with_target and self.target:
             href += f'" target="{self.target}'
         return mark_safe(href)
 
