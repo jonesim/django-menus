@@ -207,8 +207,8 @@ class TestProjectOverrideStillWins(SimpleTestCase):
 
     def test_package_ships_nothing_at_the_flat_paths(self):
         flat = [f for f in os.listdir(TEMPLATE_ROOT) if f.endswith('.html')]
-        self.assertEqual(flat, ['menu_key_press.html'],
-                         'Only the keyboard handler belongs outside the packs; anything else '
+        self.assertEqual(flat, ['menu_key_press.html', 'script.html'],
+                         'Only the keyboard handler and the repeat-click script belong outside the packs; anything else '
                          'here shadows both packs for every project.')
 
 
