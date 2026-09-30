@@ -6,6 +6,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse, resolve, Resolver404
 from django.utils.safestring import mark_safe
 
+from django_menus.packs import pack_attribute, render_pack_template
+
 
 REPEAT_CLICK_ATTRIBUTE = 'data-django-menus-repeat-ms'
 
@@ -31,12 +33,16 @@ class MenuItemBadge:
         self.text = text
         self.css_class = css_class
         self.format_function = format_function
+        # Set when the badge is read off its item, so the pack can be resolved for the
+        # request the menu is rendering for. A badge built and rendered on its own falls
+        # back to the configured default.
+        self.request = None
 
     def badge_html(self):
         if self.format_function:
             self.format_function(self)
         if self.text:
-            return mark_safe(f'&nbsp;<sup><span class="badge badge-pill badge-{self.css_class}">{self.text}</span></sup>')
+            return mark_safe(render_pack_template('badge.html', {'badge': self}, self.request))
         return ''
 
     def __str__(self):
@@ -66,6 +72,8 @@ class BaseMenuItem:
     def badge(self):
         if self._badge is None:
             return ''
+        # The badge renders through the pack, so it needs the menu's request to know which.
+        self._badge.request = getattr(self._menu, 'request', None)
         return self._badge
 
     @property
@@ -93,9 +101,8 @@ class DividerItem(BaseMenuItem):
 
     default_render = False
 
-    @staticmethod
-    def render():
-        return mark_safe('<div class="dropdown-divider"></div>')
+    def render(self):
+        return mark_safe(render_pack_template('divider.html', {}, getattr(self.menu, 'request', None)))
 
 
 class HeaderItem(BaseMenuItem):
@@ -106,7 +113,8 @@ class HeaderItem(BaseMenuItem):
         super().__init__(**kwargs)
 
     def render(self):
-        return mark_safe(f'<div class="dropdown-header">{self.text}</div>')
+        return mark_safe(render_pack_template(
+            'header.html', {'text': self.text}, getattr(self.menu, 'request', None)))
 
 
 class MenuItemDisplay:
@@ -221,9 +229,13 @@ class MenuItem(BaseMenuItem):
         # a tooltip adds three keys, a repeat-click window adds one - so keeping the caller's
         # dict meant an `attributes=` dict shared between items, or held at module level, picked
         # those up and passed them to every other item using it, for the life of the process.
+        # Only the version-neutral half of the tooltip is added here: this runs in __init__,
+        # before the item is attached to a menu, so there is no request yet and no way to know
+        # the pack. The placement attribute, whose name Bootstrap 5 changed, is added in
+        # attributes() below, which does run at render time.
         attributes = {} if attributes is None else dict(attributes)
         if tooltip:
-            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip', 'data-placement': 'bottom'})
+            attributes.update({'title': tooltip, 'data-tooltip': 'tooltip'})
         return attributes
 
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
@@ -304,6 +316,9 @@ class MenuItem(BaseMenuItem):
                 attributes.update(self.external_function(self.menu_config['attributes']))
         attributes.update(self._attributes)
         attributes.update(self.menu_display.attributes())
+        if 'data-tooltip' in attributes:
+            request = getattr(self.menu, 'request', None)
+            attributes[pack_attribute('placement', request)] = 'bottom'
         self.add_accessible_name(attributes)
         if attributes:
             return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
@@ -376,8 +391,13 @@ class MenuItem(BaseMenuItem):
 
     def render(self):
         if self.template is None:
-            self.template = 'django_menus/single_button.html'
-        return render_to_string(self.template, dict(**{'menu_item': self}, **self.kwargs))
+            self.template = 'single_button.html'
+        context = dict(**{'menu_item': self}, **self.kwargs)
+        # Same rule as HtmlMenu.templates: a bare filename is resolved against the pack, a
+        # path is one the caller supplied and is used exactly as given.
+        if '/' not in self.template:
+            return render_pack_template(self.template, context, getattr(self.menu, 'request', None))
+        return render_to_string(self.template, context)
 
     @staticmethod
     def get_additional_url_kwargs(url_kwargs, **kwargs):
