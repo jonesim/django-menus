@@ -304,9 +304,40 @@ class MenuItem(BaseMenuItem):
                 attributes.update(self.external_function(self.menu_config['attributes']))
         attributes.update(self._attributes)
         attributes.update(self.menu_display.attributes())
+        self.add_accessible_name(attributes)
         if attributes:
             return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
         return ''
+
+    def add_accessible_name(self, attributes):
+        """Give an icon-only item a name a screen reader can read.
+
+        An item rendered as an icon with no words has no text of its own, so its accessible name
+        is whatever the icon font puts in ``::before`` -- for Font Awesome that is a private use
+        codepoint, and a screen reader announces nothing useful. The words do exist: an icon-only
+        button is normally given its tooltip instead, which reaches sighted readers on hover and
+        assistive technology not at all, because ``title`` is only used for the accessible name
+        when the element has no content and the icon counts as content.
+
+        So where an item has a tooltip and no words, the tooltip becomes ``aria-label`` as well.
+
+        Only then, and this is the important half:
+
+        * an item that shows words is left alone. ``aria-label`` overrides the visible label, so
+          setting one on a labelled item makes the announced name differ from the name on screen
+          whenever the tooltip says something else -- which is what a tooltip is usually for.
+        * an ``aria-label`` the caller passed in ``attributes`` is never overwritten.
+
+        The icon itself is deliberately *not* marked ``aria-hidden``. It would be the tidier
+        markup, but it changes the accessible name of every labelled item too (dropping the glyph
+        that currently prefixes it), and that is a breaking change for anything selecting on the
+        name rather than a fix for anyone reading the page.
+        """
+        if attributes.get('aria-label') or self.menu_display.text:
+            return
+        label = attributes.get('title') or self.menu_display.tooltip
+        if label:
+            attributes['aria-label'] = label
 
     @property
     def name(self):
