@@ -1,4 +1,4 @@
-[![PyPI version](https://badge.fury.io/py/django-advanced-menus.svg)](https://badge.fury.io/py/django-advanced-menus)
+[![PyPI version](https://img.shields.io/pypi/v/django-advanced-menus)](https://pypi.org/project/django-advanced-menus/)
 
 # django-advanced-menus
 
