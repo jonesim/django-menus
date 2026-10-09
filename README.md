@@ -18,6 +18,37 @@ Add to installed apps in settings
 `'django_menus',`
     
 
+### A label is text unless it says otherwise
+
+**Changed in 1.0.1.** `MenuItemDisplay.display()` used to return `mark_safe(self.text)`, so every
+label reached the page as markup whether it meant to or not. A label that comes from a value — a
+project's name, a file's name, a report's name — put that value into the page unescaped, and an
+item was safe only because its caller happened to escape it.
+
+A label is now escaped unless it is marked safe, and the same goes for each attribute value
+`MenuItem.attributes()` writes (a quote in a `tooltip` could otherwise close `title=""` and start
+another attribute).
+
+Nothing changes for a label that is the app's own words. **A label that is markup has to say so
+where it is made:**
+
+```python
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
+
+MenuItem(url='home', menu_display=mark_safe('<i class="fas fa-lock"></i> Disable'))
+MenuItem(url='home', menu_display=format_html('<img src="{}" class="avatar">', user.avatar_url))
+```
+
+An icon does not need either — pass it as `font_awesome` and the library builds the `<i>` itself:
+
+```python
+MenuItem(url='home', menu_display='Disable', font_awesome='fas fa-lock')
+```
+
+A caller that was already escaping its own label keeps working: `escape()` returns a `SafeString`,
+which `conditional_escape` leaves alone, so nothing is escaped twice.
+
 ### Repeat clicks on menu links
 
 Every menu item renders as an `<a href>`, and a menu item can point at a view that *does*

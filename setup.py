@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="django-advanced-menus",
-    version="1.0.0",
+    version="1.0.1",
     author="Ian Jones",
     maintainer="Thomas Turner",
     description="Django app to render menus and load tabs with Ajax",

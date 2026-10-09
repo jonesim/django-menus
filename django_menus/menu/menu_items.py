@@ -4,6 +4,7 @@ from urllib.parse import urlparse, urlencode
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from django.template.loader import render_to_string
 from django.urls import reverse, resolve, Resolver404
+from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 
 from django_menus.packs import pack_attribute, render_pack_template
@@ -136,9 +137,24 @@ class MenuItemDisplay:
             self._attributes = attributes
 
     def display(self):
+        """The label, as ``{{ }}`` would print it: escaped unless it is marked safe.
+
+        A label is **text unless it says otherwise**. ``mark_safe`` here marked every one safe
+        whatever it held, so an item whose label came from a value -- a project name, a file name,
+        a report's name -- put that value into the page as markup, and the item was safe only
+        because the caller happened to escape it. A label that really is markup says so where it
+        is made (``mark_safe``, ``format_html``, a rendered template), and ``conditional_escape``
+        leaves it alone.
+
+        The icon goes through ``format_html`` for the same reason: ``font_awesome`` is written
+        into a ``class`` attribute, and it is not always a literal either.
+
+        ``None`` still reads as ``'None'``, as it did -- that is what a menu with no display shows
+        today, and changing it is a separate question from what a label may contain.
+        """
         if self.font_awesome:
-            return mark_safe(f'<i class="{self.font_awesome}"></i> {self.text}')
-        return mark_safe(self.text)
+            return format_html('<i class="{}"></i> {}', self.font_awesome, self.text)
+        return conditional_escape(self.text)
 
     @property
     def css_classes(self):
@@ -321,7 +337,10 @@ class MenuItem(BaseMenuItem):
             attributes[pack_attribute('placement', request)] = 'bottom'
         self.add_accessible_name(attributes)
         if attributes:
-            return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
+            # Each value is written inside double quotes, so it is escaped unless it is marked
+            # safe -- the same rule as the label. A tooltip is the usual one to hold text
+            # somebody typed, and a quote in it closed the attribute and started another.
+            return mark_safe(' '.join([f'{k}="{conditional_escape(v)}"' for k, v in attributes.items()]))
         return ''
 
     def add_accessible_name(self, attributes):

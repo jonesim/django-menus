@@ -6,6 +6,8 @@ reader has to go on and used to be the icon font's private use codepoint.
 """
 
 from django.test import SimpleTestCase
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django_menus.menu import MenuItem, MenuItemDisplay
 
 
@@ -86,3 +88,66 @@ class TheRenderedNameIsUnchanged(SimpleTestCase):
 
     def test_the_icon_carries_no_aria_hidden(self):
         self.assertNotIn('aria-hidden', MenuItemDisplay('', font_awesome='fa fa-plus').display())
+
+
+class ALabelIsTextUnlessItSaysOtherwise(SimpleTestCase):
+    """``display()`` escapes a label that is not marked safe.
+
+    It used to ``mark_safe`` whatever it was given, so an item whose label came from a value --
+    a project name, a file name, a report's name -- wrote that value into the page as markup.
+    A label that is markup on purpose says so where it is made, and keeps working.
+    """
+
+    PAYLOAD = '<img src=x onerror=alert(1)>'
+
+    def test_a_label_holding_markup_is_escaped(self):
+        self.assertEqual(MenuItemDisplay(self.PAYLOAD).display(), '&lt;img src=x onerror=alert(1)&gt;')
+
+    def test_a_label_holding_markup_is_escaped_beside_an_icon_too(self):
+        """The icon branch is a second renderer, and the one a menu item usually takes."""
+        rendered = MenuItemDisplay(self.PAYLOAD, font_awesome='fa fa-plus').display()
+
+        self.assertNotIn('<img', rendered)
+        self.assertIn('<i class="fa fa-plus"></i>', rendered)
+
+    def test_a_label_marked_safe_is_still_markup(self):
+        """``mark_safe``/``format_html``/a rendered template: the caller's own markup goes through."""
+        display = MenuItemDisplay(mark_safe('<i class="fa fa-lock"></i> Disable'))
+
+        self.assertEqual(display.display(), '<i class="fa fa-lock"></i> Disable')
+
+    def test_a_label_already_escaped_is_not_escaped_twice(self):
+        """Callers escaped their own labels while this marked everything safe. They still work."""
+        self.assertEqual(MenuItemDisplay(escape(self.PAYLOAD)).display(), '&lt;img src=x onerror=alert(1)&gt;')
+
+    def test_the_icon_class_cannot_end_its_attribute(self):
+        rendered = MenuItemDisplay('Add', font_awesome='fa" onmouseover="alert(1)').display()
+
+        self.assertNotIn('onmouseover="', rendered)
+
+    def test_a_label_of_none_still_reads_as_none(self):
+        """Unchanged: a display with no text showed ``None`` before and shows it now."""
+        self.assertEqual(MenuItemDisplay(None).display(), 'None')
+
+
+class AnAttributeValueIsTextToo(SimpleTestCase):
+    """``attributes()`` writes each value inside double quotes, and marked them all safe.
+
+    A tooltip is the one that holds text somebody typed, so a quote in it closed ``title=""`` and
+    whatever followed was read as further attributes.
+    """
+
+    def test_a_quote_in_a_tooltip_cannot_start_another_attribute(self):
+        rendered = attributes_of(menu_display=MenuItemDisplay('Edit', tooltip='Bo" onmouseover="alert(1)'))
+
+        self.assertNotIn('onmouseover="', rendered)
+        self.assertIn('&quot;', rendered)
+
+    def test_an_ordinary_tooltip_is_unchanged(self):
+        self.assertIn('title="Edit"', attributes_of(menu_display=MenuItemDisplay('Edit', tooltip='Edit')))
+
+    def test_a_tooltip_already_escaped_is_not_escaped_twice(self):
+        rendered = attributes_of(menu_display=MenuItemDisplay('Edit', tooltip=escape('Bo"b')))
+
+        self.assertIn('title="Bo&quot;b"', rendered)
+        self.assertNotIn('&amp;quot;', rendered)
