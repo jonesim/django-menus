@@ -8,7 +8,7 @@ reader has to go on and used to be the icon font's private use codepoint.
 from django.test import SimpleTestCase
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django_menus.menu import MenuItem, MenuItemDisplay
+from django_menus.menu import HtmlMenu, MenuItem, MenuItemDisplay
 
 
 def attributes_of(**kwargs) -> str:
@@ -151,3 +151,50 @@ class AnAttributeValueIsTextToo(SimpleTestCase):
 
         self.assertIn('title="Bo&quot;b"', rendered)
         self.assertNotIn('&amp;quot;', rendered)
+
+
+class ADefaultIsKeyedOnTheLabelNotOnItsRendering(SimpleTestCase):
+    """``button_defaults`` is looked up on the label the caller gave, not on the rendered one.
+
+    `MenuItem.menu`'s setter matched `self.name`, which is `MenuItemDisplay.display()` -- the
+    label as it reaches the page. Once that escapes, a default keyed `R&D` stops matching an item
+    labelled `R&D`, silently, because the key it is compared against has become `R&amp;D`. A key
+    is not a rendering, so the lookup has its own.
+    """
+
+    @staticmethod
+    def displayed(label, defaults, **kwargs):
+        menu = HtmlMenu(button_defaults=defaults).add_items(
+            MenuItem(url='#', link_type=MenuItem.HREF, menu_display=label, **kwargs)
+        )
+        return menu.menu_items[0].menu_display
+
+    def test_a_default_keyed_with_an_ampersand_still_applies(self):
+        display = self.displayed('R&D', {'R&D': MenuItemDisplay('Research', 'fa fa-flask')})
+
+        self.assertEqual('Research', display.text)
+
+    def test_an_ordinary_default_still_applies(self):
+        display = self.displayed('edit', {'edit': MenuItemDisplay('Edit-default', 'fas fa-pen')})
+
+        self.assertEqual('Edit-default', display.text)
+
+    def test_an_item_with_its_own_icon_matches_exactly_what_it_matched_before(self):
+        """Unchanged on purpose.
+
+        ``display()`` put the icon's ``<i>`` in front of the words, so an item carrying its own
+        ``font_awesome`` never matched a plain key and does not start to now. Keying on the text
+        alone would read better and would change which items pick up a default, which is a
+        separate question from escaping.
+        """
+        display = self.displayed('edit', {'edit': MenuItemDisplay('Edit-default')}, font_awesome='fa fa-star')
+
+        self.assertEqual('edit', display.text)
+
+    def test_the_rendered_label_is_still_escaped(self):
+        """The key is unescaped; what reaches the page is not."""
+        menu = HtmlMenu(button_defaults={}).add_items(
+            MenuItem(url='#', link_type=MenuItem.HREF, menu_display='R&D')
+        )
+
+        self.assertEqual('R&amp;D', menu.menu_items[0].name)

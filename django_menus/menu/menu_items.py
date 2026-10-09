@@ -229,8 +229,9 @@ class MenuItem(BaseMenuItem):
     def menu(self, menu):
         self._menu = menu
         self._apply_menu_repeat_click_ms()
-        if menu.button_defaults and self.name in menu.button_defaults:
-            self.menu_display = menu.button_defaults[self.name]
+        key = self.default_key
+        if menu.button_defaults and key in menu.button_defaults:
+            self.menu_display = menu.button_defaults[key]
             if not isinstance(self.menu_display, MenuItemDisplay):
                 self.menu_display = MenuItemDisplay(self.menu_display)
         if self.dropdown:
@@ -376,6 +377,25 @@ class MenuItem(BaseMenuItem):
     @property
     def name(self):
         return self.menu_display.display()
+
+    @property
+    def default_key(self):
+        """The key `button_defaults` is matched on: the label as the caller gave it.
+
+        Not `name`. `name` is the label *rendered* -- escaped, and with the icon's `<i>` in front
+        of the words when the item carries one -- and a key is not a rendering. Keyed on `name`,
+        a default keyed `R&D` stopped matching an item labelled `R&D` the moment `display()`
+        began escaping, silently and only for the keys that hold a character worth escaping.
+
+        It reproduces what `display()` returned *before* it escaped, rather than using `text`
+        alone, so which items match which default is exactly what it was. `text` alone would read
+        better and would change that: an item carrying its own `font_awesome` has never matched a
+        plain key, and would start to.
+        """
+        display = self.menu_display
+        if display.font_awesome:
+            return f'<i class="{display.font_awesome}"></i> {display.text}'
+        return display.text
 
     @property
     def resolved_url(self):

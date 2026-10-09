@@ -49,6 +49,10 @@ MenuItem(url='home', menu_display='Disable', font_awesome='fas fa-lock')
 A caller that was already escaping its own label keeps working: `escape()` returns a `SafeString`,
 which `conditional_escape` leaves alone, so nothing is escaped twice.
 
+`button_defaults` is unaffected. It is keyed on the label as you gave it, not on the rendered one,
+so a default keyed `R&D` still matches an item labelled `R&D` — `MenuItem.default_key` is the
+lookup, and `MenuItem.name` stays the thing the template prints.
+
 ### Repeat clicks on menu links
 
 Every menu item renders as an `<a href>`, and a menu item can point at a view that *does*
