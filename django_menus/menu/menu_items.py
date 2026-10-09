@@ -192,10 +192,13 @@ class MenuItemDisplay:
         default keyed `R&D` has to go on matching a label of `R&D`; this returns what `display()`
         returned *before* it escaped, so which items match which default is unchanged.
 
-        **A subclass that overrides `display()` should override this too** when its labels are
-        keys in `button_defaults`. The lookup used to go through `display()` itself, so an
-        override chose the key for free; now it says so here instead.
+        **A subclass with its own `display()` keeps the key that renderer gave**, without having
+        to hear about this method: the lookup used to go through `display()`, and a custom one is
+        the subclass's own code, untouched by the escaping added here, so calling it returns what
+        it always returned. Override this as well only to choose a *different* key.
         """
+        if type(self).display is not MenuItemDisplay.display:
+            return self.display()
         if self.font_awesome:
             return f'<i class="{self.font_awesome}"></i> {self.text}'
         return mark_safe(self.text)

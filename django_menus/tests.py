@@ -394,3 +394,44 @@ class ADisplaySubclassSaysWhatItsKeyIs(SimpleTestCase):
         item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=MenuItemDisplay('Edit'))
 
         self.assertEqual('Edit', item.default_key)
+class _RendererOnlyDisplay(MenuItemDisplay):
+    """A subclass of the kind that existed before `default_key` did: a renderer, nothing else."""
+
+    def display(self):
+        return mark_safe(f'<em>{escape(self.text)}</em>')
+
+
+class ADisplayOnlySubclassKeepsTheKeyItHad(SimpleTestCase):
+    """The common case, and the one a patch release must not move.
+
+    The lookup went through `display()`, so a subclass with its own renderer has always keyed its
+    defaults on that renderer's output -- without knowing anything about keys. Giving the key its
+    own method must not quietly re-key those: a custom `display()` is the subclass's own code and
+    the escaping added here does not touch it, so it still answers for the key unless the subclass
+    says otherwise.
+    """
+
+    def test_its_renderer_still_decides_the_key(self):
+        item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=_RendererOnlyDisplay('Edit'))
+
+        self.assertEqual('<em>Edit</em>', item.default_key)
+
+    def test_and_a_default_keyed_that_way_still_applies(self):
+        menu = HtmlMenu(button_defaults={'<em>Edit</em>': MenuItemDisplay('Resolved')}).add_items(
+            MenuItem(url='#', link_type=MenuItem.HREF, menu_display=_RendererOnlyDisplay('Edit'))
+        )
+
+        self.assertEqual('Resolved', menu.menu_items[0].menu_display.text)
+
+    def test_overriding_default_key_as_well_still_wins(self):
+        """Opting in is for choosing a *different* key, and still does."""
+        item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=_ShoutingDisplay('Edit'))
+
+        self.assertEqual('shouted:Edit', item.default_key)
+
+    def test_the_stock_display_is_not_dragged_through_its_renderer(self):
+        """The base class keeps the reconstruction, which is what stops escaping moving the key."""
+        item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=MenuItemDisplay('R&D'))
+
+        self.assertEqual('R&D', item.default_key)
+        self.assertEqual('R&amp;D', item.name)
