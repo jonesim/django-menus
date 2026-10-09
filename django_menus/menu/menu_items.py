@@ -137,9 +137,11 @@ def attribute_name_is_safe(name):
     space, `=`, a quote -- and a key of `x onmouseover` renders a second attribute the browser
     runs, whatever is done to the value beside it.
 
-    `on*` is refused as well, so a key alone can never introduce an event handler. This library
-    writes no `on*` attribute of its own, and a menu item that needs to run something has the
-    javascript and ajax link types for it.
+    `on*` is refused as well, so a key alone can never introduce an event handler. The ajax
+    dropdown templates do write an `onclick` of their own, but in their own markup rather than
+    through this dict, so refusing the name here does not disturb it -- and a caller passing
+    `onclick` would have put a second one on the same tag, which is its own reason to refuse. A
+    menu item that needs to run something has the javascript and ajax link types for it.
     """
     name = str(name)
     return bool(_ATTRIBUTE_NAME.fullmatch(name)) and not name.lower().startswith('on')
