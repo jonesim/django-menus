@@ -333,3 +333,64 @@ class AnHtmlObjectLabelKeysTheSameDefault(SimpleTestCase):
         label = _HtmlLabel('<b>Edit</b>')
 
         self.assertEqual('<b>Edit</b>', MenuItemDisplay(label).display())
+class _TwoFacedName:
+    """A key whose `__format__` says something other than its `__str__`.
+
+    Contrived on purpose. The point is not that a caller would write this, it is that the check
+    and the render have to agree about what the name *is*, and an f-string calls `__format__`.
+    """
+
+    def __str__(self):
+        return 'data-id'
+
+    def __format__(self, spec):
+        return 'x onmouseover'
+
+    def __hash__(self):
+        return hash('data-id')
+
+    def __eq__(self, other):
+        return isinstance(other, _TwoFacedName)
+
+
+class TheCheckedNameIsTheRenderedName(SimpleTestCase):
+    def test_a_key_cannot_say_one_thing_to_the_check_and_another_to_the_render(self):
+        rendered = attributes_of(attributes={_TwoFacedName(): 'alert(1)'})
+
+        self.assertNotIn('onmouseover', rendered)
+
+
+class _ShoutingDisplay(MenuItemDisplay):
+    """A display with its own renderer, of the kind the old lookup let choose its own key."""
+
+    def display(self):
+        return mark_safe(f'<em>{escape(self.text)}</em>')
+
+    def default_key(self):
+        return f'shouted:{self.text}'
+
+
+class ADisplaySubclassSaysWhatItsKeyIs(SimpleTestCase):
+    """The lookup used to go through `display()`, so an override chose the key for free.
+
+    Splitting the key off from the rendering is what stops escaping moving it -- but it would
+    also have taken that from a subclass, silently, so the key is the display's to answer and a
+    subclass overrides it there.
+    """
+
+    def test_the_subclass_decides_the_key(self):
+        item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=_ShoutingDisplay('Edit'))
+
+        self.assertEqual('shouted:Edit', item.default_key)
+
+    def test_and_that_key_is_what_a_default_is_matched_on(self):
+        menu = HtmlMenu(button_defaults={'shouted:Edit': MenuItemDisplay('Resolved')}).add_items(
+            MenuItem(url='#', link_type=MenuItem.HREF, menu_display=_ShoutingDisplay('Edit'))
+        )
+
+        self.assertEqual('Resolved', menu.menu_items[0].menu_display.text)
+
+    def test_a_display_that_overrides_nothing_is_unaffected(self):
+        item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=MenuItemDisplay('Edit'))
+
+        self.assertEqual('Edit', item.default_key)

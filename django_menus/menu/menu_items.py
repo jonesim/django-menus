@@ -185,6 +185,21 @@ class MenuItemDisplay:
             return format_html('<i class="{}"></i> {}', self.font_awesome, self.text)
         return conditional_escape(self.text)
 
+    def default_key(self):
+        """The key `button_defaults` is matched on for an item showing this display.
+
+        Separate from `display()` because a key is not a rendering. `display()` escapes, and a
+        default keyed `R&D` has to go on matching a label of `R&D`; this returns what `display()`
+        returned *before* it escaped, so which items match which default is unchanged.
+
+        **A subclass that overrides `display()` should override this too** when its labels are
+        keys in `button_defaults`. The lookup used to go through `display()` itself, so an
+        override chose the key for free; now it says so here instead.
+        """
+        if self.font_awesome:
+            return f'<i class="{self.font_awesome}"></i> {self.text}'
+        return mark_safe(self.text)
+
     @property
     def css_classes(self):
         return self._css_classes
@@ -375,10 +390,15 @@ class MenuItem(BaseMenuItem):
             # A name is checked instead, and dropped when it is not a plain attribute name: it is
             # not quoted, so escaping would not stop it, and `attributes=` and the
             # `menu_config['attributes']` callable both let a caller supply the key.
+            # `str(k)` once, and that same string is both checked and written. Interpolating
+            # `k` here instead would render `format(k)`, which a class is free to make differ
+            # from its `__str__` -- validating one representation and emitting another is the
+            # shape of the bug however unlikely the object.
+            names = ((str(k), v) for k, v in attributes.items())
             return mark_safe(' '.join([
-                f'{k}="{conditional_escape(v)}"'
-                for k, v in attributes.items()
-                if attribute_name_is_safe(k)
+                f'{name}="{conditional_escape(v)}"'
+                for name, v in names
+                if attribute_name_is_safe(name)
             ]))
         return ''
 
@@ -418,27 +438,17 @@ class MenuItem(BaseMenuItem):
 
     @property
     def default_key(self):
-        """The key `button_defaults` is matched on: the label as the caller gave it.
+        """The key `button_defaults` is matched on, which the display decides.
 
         Not `name`. `name` is the label *rendered* -- escaped, and with the icon's `<i>` in front
         of the words when the item carries one -- and a key is not a rendering. Keyed on `name`,
         a default keyed `R&D` stopped matching an item labelled `R&D` the moment `display()`
         began escaping, silently and only for the keys that hold a character worth escaping.
 
-        It reproduces what `display()` returned *before* it escaped, rather than using `text`
-        alone, so which items match which default is exactly what it was. `text` alone would read
-        better and would change that: an item carrying its own `font_awesome` has never matched a
-        plain key, and would start to.
+        It is `MenuItemDisplay.default_key` that answers, so a subclass with its own renderer can
+        say what its key is rather than have one reconstructed from fields it may not use.
         """
-        display = self.menu_display
-        if display.font_awesome:
-            return f'<i class="{display.font_awesome}"></i> {display.text}'
-        # `mark_safe`, which is the expression the lookup used to go through, rather than a
-        # `str()` that only looks equivalent. `SafeString(None)` is the string `'None'` and
-        # `SafeString(1)` is `'1'`, so a default keyed `'None'` or `'1'` still matches -- and an
-        # object carrying `__html__` is handed back *unchanged*, where `str()` would convert it
-        # and stop it matching a default keyed by that same object.
-        return mark_safe(display.text)
+        return self.menu_display.default_key()
 
     @property
     def resolved_url(self):

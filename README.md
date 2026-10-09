@@ -60,6 +60,10 @@ lookup is `MenuItem.default_key`, which is the label as `display()` rendered it 
 escaped, so a default keyed `R&D` still matches an item labelled `R&D`; `MenuItem.name` stays the
 thing the template prints, and is escaped.
 
+`MenuItemDisplay.default_key()` is what answers, so a subclass with its own `display()` can say
+what its key is -- override both together when your labels are `button_defaults` keys, since the
+lookup no longer goes through the renderer.
+
 That is a compatibility contract rather than a tidy one, and it has a sharp edge worth knowing:
 when the item carries its own `font_awesome`, the key includes the generated `<i ...></i>` just as
 it always has, so a plain-label key does not match such an item. Key a default on the label alone
