@@ -198,3 +198,40 @@ class ADefaultIsKeyedOnTheLabelNotOnItsRendering(SimpleTestCase):
         )
 
         self.assertEqual('R&amp;D', menu.menu_items[0].name)
+
+
+class ADefaultKeyIsAStringWhateverTheLabelWas(SimpleTestCase):
+    """A label that is not a string still keys the same default it used to.
+
+    The lookup used to go through ``mark_safe(self.text)``, and ``SafeString`` is a ``str``
+    subclass: ``SafeString(None)`` is ``'None'`` and ``SafeString(1)`` is ``'1'``. So a default has
+    always been keyed by the **string**, even when the label was not one. Handing back the raw
+    value instead would stop a default keyed ``'None'`` matching and start one keyed ``None``
+    matching -- a silent swap, in the one property whose whole job is to not move the key.
+    """
+
+    @staticmethod
+    def key_for(label, **kwargs):
+        return MenuItem(url='#', link_type=MenuItem.HREF, menu_display=label, **kwargs).default_key
+
+    def test_a_label_of_none_keys_the_string(self):
+        self.assertEqual('None', self.key_for(None))
+
+    def test_a_number_label_keys_the_string(self):
+        self.assertEqual('1', self.key_for(1))
+        self.assertEqual('0', self.key_for(0))
+
+    def test_a_default_keyed_by_the_string_still_applies_to_a_number_label(self):
+        """The end of the path, not just the property: a menu, a default, and the item picking it up."""
+        menu = HtmlMenu(button_defaults={'1': MenuItemDisplay('Numbered')}).add_items(
+            MenuItem(url='#', link_type=MenuItem.HREF, menu_display=1)
+        )
+
+        self.assertEqual('Numbered', menu.menu_items[0].menu_display.text)
+
+    def test_an_ordinary_label_is_unchanged(self):
+        self.assertEqual('edit', self.key_for('edit'))
+
+    def test_an_icon_label_still_carries_its_icon_into_the_key(self):
+        """Documented in the README as the sharp edge of keeping the old behaviour."""
+        self.assertEqual('<i class="fa fa-pen"></i> edit', self.key_for('edit', font_awesome='fa fa-pen'))

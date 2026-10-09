@@ -49,9 +49,15 @@ MenuItem(url='home', menu_display='Disable', font_awesome='fas fa-lock')
 A caller that was already escaping its own label keeps working: `escape()` returns a `SafeString`,
 which `conditional_escape` leaves alone, so nothing is escaped twice.
 
-`button_defaults` is unaffected. It is keyed on the label as you gave it, not on the rendered one,
-so a default keyed `R&D` still matches an item labelled `R&D` — `MenuItem.default_key` is the
-lookup, and `MenuItem.name` stays the thing the template prints.
+`button_defaults` is unaffected: which item picks up which default is exactly what it was. The
+lookup is `MenuItem.default_key`, which is the label as `display()` rendered it **before** it
+escaped, so a default keyed `R&D` still matches an item labelled `R&D`; `MenuItem.name` stays the
+thing the template prints, and is escaped.
+
+That is a compatibility contract rather than a tidy one, and it has a sharp edge worth knowing:
+when the item carries its own `font_awesome`, the key includes the generated `<i ...></i>` just as
+it always has, so a plain-label key does not match such an item. Key a default on the label alone
+and give the icon in the default itself.
 
 ### Repeat clicks on menu links
 

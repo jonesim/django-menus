@@ -395,7 +395,11 @@ class MenuItem(BaseMenuItem):
         display = self.menu_display
         if display.font_awesome:
             return f'<i class="{display.font_awesome}"></i> {display.text}'
-        return display.text
+        # str(), because the old path was `mark_safe(self.text)` and `SafeString(None)` is the
+        # string `'None'`. Returning the value raw would stop a default keyed `'None'` or `'1'`
+        # matching, and start one keyed `None` or `1` matching, which is the opposite of the
+        # point of this property.
+        return str(display.text)
 
     @property
     def resolved_url(self):
