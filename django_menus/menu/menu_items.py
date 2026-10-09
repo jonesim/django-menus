@@ -122,7 +122,11 @@ class HeaderItem(BaseMenuItem):
 #: A plain attribute name: a letter, `_` or `:` to start, then letters, digits, `-`, `_`, `:` or
 #: `.`. No whitespace, quotes, `=`, `/` or angle brackets, so one key can never close its own
 #: attribute and open a second one.
-_ATTRIBUTE_NAME = re.compile(r'^[A-Za-z_:][-A-Za-z0-9_:.]*$')
+#:
+#: Used with `fullmatch`, not `match`: `$` matches *before a trailing newline* as well as at the
+#: end of the string, so `'data-id\n'` satisfies `...$` and the pattern would not mean what the
+#: line above it says.
+_ATTRIBUTE_NAME = re.compile(r'[A-Za-z_:][-A-Za-z0-9_:.]*')
 
 
 def attribute_name_is_safe(name):
@@ -138,7 +142,7 @@ def attribute_name_is_safe(name):
     javascript and ajax link types for it.
     """
     name = str(name)
-    return bool(_ATTRIBUTE_NAME.match(name)) and not name.lower().startswith('on')
+    return bool(_ATTRIBUTE_NAME.fullmatch(name)) and not name.lower().startswith('on')
 
 
 class MenuItemDisplay:
@@ -252,11 +256,12 @@ class MenuItem(BaseMenuItem):
     def menu(self, menu):
         self._menu = menu
         self._apply_menu_repeat_click_ms()
-        key = self.default_key
-        if menu.button_defaults and key in menu.button_defaults:
-            self.menu_display = menu.button_defaults[key]
-            if not isinstance(self.menu_display, MenuItemDisplay):
-                self.menu_display = MenuItemDisplay(self.menu_display)
+        if menu.button_defaults:
+            key = self.default_key
+            if key in menu.button_defaults:
+                self.menu_display = menu.button_defaults[key]
+                if not isinstance(self.menu_display, MenuItemDisplay):
+                    self.menu_display = MenuItemDisplay(self.menu_display)
         if self.dropdown:
             self.dropdown.menu = menu
 

@@ -264,6 +264,17 @@ class AnAttributeNameIsCheckedNotEscaped(SimpleTestCase):
 
                 self.assertNotIn(key, rendered)
 
+    def test_whitespace_cannot_hide_at_the_end_of_a_key(self):
+        """``$`` matches before a trailing newline, so ``match`` let ``data-id\\n`` through.
+
+        Not an injection by itself -- a parser reads the newline as the whitespace it already
+        allows before the ``=`` -- but a check has to mean what its docstring says, or the next
+        person reads the policy and not the gap in it. ``fullmatch`` closes it.
+        """
+        for key in ('data-id\n', 'data-id\r', 'data-id\t', 'data-id '):
+            with self.subTest(key=repr(key)):
+                self.assertNotIn('data-id', attributes_of(attributes={key: 'v'}))
+
     def test_the_names_a_menu_actually_uses_still_render(self):
         rendered = attributes_of(
             attributes={'data-id': '7', 'aria-hidden': 'true', 'hx-get': '/x', 'x-on:click': 'go'},
