@@ -276,6 +276,15 @@ class AnAttributeNameIsCheckedNotEscaped(SimpleTestCase):
                 self.assertNotIn('data-id', attributes_of(attributes={key: 'v'}))
 
     def test_the_names_a_menu_actually_uses_still_render(self):
+        """Including `x-on:click`, which is kept on purpose.
+
+        It is an executable directive wherever Alpine is loaded, so the check is not a promise
+        that a name is inert -- only that it cannot become markup, and cannot be a native `on*`.
+        Refusing framework directives would break the callers using them deliberately and the
+        list has no end (`@click`, `v-on:`, `hx-on:`, `data-action`, and whatever is next), and a
+        `data-*` allowlist would not help anyone whose attribute *names* come from user input,
+        which is the only way this arises.
+        """
         rendered = attributes_of(
             attributes={'data-id': '7', 'aria-hidden': 'true', 'hx-get': '/x', 'x-on:click': 'go'},
             menu_display=MenuItemDisplay('Edit', tooltip='Edit'),

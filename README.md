@@ -53,7 +53,13 @@ An attribute **name** is checked rather than escaped, and dropped when it is not
 name — escaping would not help, since a name is not quoted and a key such as `x onmouseover`
 renders a second attribute whatever is done to its value. Names of letters, digits, `-`, `_`, `:`
 and `.` are kept, so `data-*`, `aria-*` and the attribute-style hooks other front-end libraries
-use still work; `on*` is refused, so a key alone can never introduce an event handler.
+use still work; `on*` is refused, so a key cannot be a native event handler.
+
+The guarantee is structural rather than total: a name cannot become *markup* — it cannot close its
+own attribute, open a second one, or end the tag. It is not a promise that a name is inert in your
+page. `x-on:click`, `@click`, `v-on:` and `hx-on:` are well-formed names that execute under some
+front-end framework, and this library cannot know which you load. Attribute names should come from
+your own code, not from user input; if they do not, this is not the place to fix it.
 
 `button_defaults` is unaffected: which item picks up which default is exactly what it was. The
 lookup is `MenuItem.default_key`, which is the label as `display()` rendered it **before** it

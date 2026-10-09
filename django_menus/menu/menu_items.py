@@ -137,11 +137,21 @@ def attribute_name_is_safe(name):
     space, `=`, a quote -- and a key of `x onmouseover` renders a second attribute the browser
     runs, whatever is done to the value beside it.
 
-    `on*` is refused as well, so a key alone can never introduce an event handler. The ajax
-    dropdown templates do write an `onclick` of their own, but in their own markup rather than
-    through this dict, so refusing the name here does not disturb it -- and a caller passing
-    `onclick` would have put a second one on the same tag, which is its own reason to refuse. A
-    menu item that needs to run something has the javascript and ajax link types for it.
+    `on*` is refused as well, so a key cannot be a native event handler. The ajax dropdown
+    templates do write an `onclick` of their own, but in their own markup rather than through this
+    dict, so refusing the name here does not disturb it -- and a caller passing `onclick` would
+    have put a second one on the same tag, which is its own reason to refuse. A menu item that
+    needs to run something has the javascript and ajax link types for it.
+
+    **What this does not promise.** That a name is inert in the page it lands on. `x-on:click`,
+    `@click`, `v-on:`, `hx-on:` and `data-action` are all well-formed names that execute under
+    some front-end framework, and this library cannot know which a consumer loads; refusing them
+    would break the callers using them deliberately, and the list has no end. The guarantee is
+    narrower and structural: **a name cannot become markup** -- it cannot close its own attribute,
+    open a second one, or end the tag -- and it cannot be a native `on*`.
+
+    If attribute *names* are reaching this from untrusted input, that is the thing to fix. No
+    policy here can help: `data-*` alone is enough to drive most framework code.
     """
     name = str(name)
     return bool(_ATTRIBUTE_NAME.fullmatch(name)) and not name.lower().startswith('on')
