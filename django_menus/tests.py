@@ -235,3 +235,90 @@ class ADefaultKeyIsAStringWhateverTheLabelWas(SimpleTestCase):
     def test_an_icon_label_still_carries_its_icon_into_the_key(self):
         """Documented in the README as the sharp edge of keeping the old behaviour."""
         self.assertEqual('<i class="fa fa-pen"></i> edit', self.key_for('edit', font_awesome='fa fa-pen'))
+
+
+class AnAttributeNameIsCheckedNotEscaped(SimpleTestCase):
+    """A key cannot introduce a second attribute.
+
+    Escaping the value and not the name is false assurance: a name is not quoted, so the
+    characters that do the damage are the ones that end it. A key of ``x onmouseover`` renders
+    ``x onmouseover="..."``, which the browser reads as an event handler however carefully the
+    value beside it was escaped. Both the public ``attributes=`` mapping and the
+    ``menu_config['attributes']`` callable let a caller supply a key.
+    """
+
+    def test_a_key_cannot_open_an_event_handler(self):
+        rendered = attributes_of(attributes={'x onmouseover': 'alert(1)'})
+
+        self.assertNotIn('onmouseover', rendered)
+
+    def test_an_event_handler_name_is_refused_outright(self):
+        """Not only the smuggled kind: a key alone never becomes an ``on*``."""
+        self.assertNotIn('onclick', attributes_of(attributes={'onclick': 'alert(1)'}))
+        self.assertNotIn('onClick', attributes_of(attributes={'onClick': 'alert(1)'}))
+
+    def test_a_key_cannot_close_the_tag(self):
+        for key in ('x>', 'x"', "x'", 'x=y', 'x/'):
+            with self.subTest(key=key):
+                rendered = attributes_of(attributes={key: 'v'})
+
+                self.assertNotIn(key, rendered)
+
+    def test_the_names_a_menu_actually_uses_still_render(self):
+        rendered = attributes_of(
+            attributes={'data-id': '7', 'aria-hidden': 'true', 'hx-get': '/x', 'x-on:click': 'go'},
+            menu_display=MenuItemDisplay('Edit', tooltip='Edit'),
+        )
+
+        for expected in ('data-id="7"', 'aria-hidden="true"', 'hx-get="/x"', 'x-on:click="go"', 'title="Edit"'):
+            self.assertIn(expected, rendered)
+
+    def test_a_refused_name_does_not_take_the_others_with_it(self):
+        rendered = attributes_of(attributes={'data-id': '7', 'x onmouseover': 'alert(1)'})
+
+        self.assertIn('data-id="7"', rendered)
+        self.assertNotIn('onmouseover', rendered)
+
+
+class _HtmlLabel:
+    """A hashable object carrying Django's html protocol, usable as a label and as a key."""
+
+    def __init__(self, markup):
+        self.markup = markup
+
+    def __html__(self):
+        return self.markup
+
+    def __hash__(self):
+        return hash(self.markup)
+
+    def __eq__(self, other):
+        return isinstance(other, _HtmlLabel) and other.markup == self.markup
+
+
+class AnHtmlObjectLabelKeysTheSameDefault(SimpleTestCase):
+    """``mark_safe`` hands back an object with ``__html__`` unchanged, and ``str()`` would not.
+
+    So an HTML-safe object used as both the label and the `button_defaults` key matched before the
+    escaping change, and has to go on matching. This is why `default_key` is the old expression
+    rather than something that merely looks equivalent.
+    """
+
+    def test_the_object_itself_is_the_key(self):
+        label = _HtmlLabel('<b>Edit</b>')
+
+        self.assertEqual(label, MenuItem(url='#', link_type=MenuItem.HREF, menu_display=label).default_key)
+
+    def test_a_default_keyed_by_that_object_still_applies(self):
+        label = _HtmlLabel('<b>Edit</b>')
+        menu = HtmlMenu(button_defaults={label: MenuItemDisplay('Resolved')}).add_items(
+            MenuItem(url='#', link_type=MenuItem.HREF, menu_display=label)
+        )
+
+        self.assertEqual('Resolved', menu.menu_items[0].menu_display.text)
+
+    def test_its_markup_still_reaches_the_page(self):
+        """It says it is html, so it is html -- the escaping change does not touch it."""
+        label = _HtmlLabel('<b>Edit</b>')
+
+        self.assertEqual('<b>Edit</b>', MenuItemDisplay(label).display())

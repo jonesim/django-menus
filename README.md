@@ -49,6 +49,12 @@ MenuItem(url='home', menu_display='Disable', font_awesome='fas fa-lock')
 A caller that was already escaping its own label keeps working: `escape()` returns a `SafeString`,
 which `conditional_escape` leaves alone, so nothing is escaped twice.
 
+An attribute **name** is checked rather than escaped, and dropped when it is not a plain attribute
+name — escaping would not help, since a name is not quoted and a key such as `x onmouseover`
+renders a second attribute whatever is done to its value. Names of letters, digits, `-`, `_`, `:`
+and `.` are kept, so `data-*`, `aria-*` and the attribute-style hooks other front-end libraries
+use still work; `on*` is refused, so a key alone can never introduce an event handler.
+
 `button_defaults` is unaffected: which item picks up which default is exactly what it was. The
 lookup is `MenuItem.default_key`, which is the label as `display()` rendered it **before** it
 escaped, so a default keyed `R&D` still matches an item labelled `R&D`; `MenuItem.name` stays the

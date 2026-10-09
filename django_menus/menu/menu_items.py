@@ -1,4 +1,5 @@
 import json
+import re
 from urllib.parse import urlparse, urlencode
 
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
@@ -116,6 +117,28 @@ class HeaderItem(BaseMenuItem):
     def render(self):
         return mark_safe(render_pack_template(
             'header.html', {'text': self.text}, getattr(self.menu, 'request', None)))
+
+
+#: A plain attribute name: a letter, `_` or `:` to start, then letters, digits, `-`, `_`, `:` or
+#: `.`. No whitespace, quotes, `=`, `/` or angle brackets, so one key can never close its own
+#: attribute and open a second one.
+_ATTRIBUTE_NAME = re.compile(r'^[A-Za-z_:][-A-Za-z0-9_:.]*$')
+
+
+def attribute_name_is_safe(name):
+    """Whether `name` may be written as an attribute name.
+
+    Attribute names are **checked, not escaped**: escaping is the wrong tool here. A name is not
+    quoted in the output, so the characters that do the damage are the ones that end it -- a
+    space, `=`, a quote -- and a key of `x onmouseover` renders a second attribute the browser
+    runs, whatever is done to the value beside it.
+
+    `on*` is refused as well, so a key alone can never introduce an event handler. This library
+    writes no `on*` attribute of its own, and a menu item that needs to run something has the
+    javascript and ajax link types for it.
+    """
+    name = str(name)
+    return bool(_ATTRIBUTE_NAME.match(name)) and not name.lower().startswith('on')
 
 
 class MenuItemDisplay:
@@ -338,10 +361,18 @@ class MenuItem(BaseMenuItem):
             attributes[pack_attribute('placement', request)] = 'bottom'
         self.add_accessible_name(attributes)
         if attributes:
-            # Each value is written inside double quotes, so it is escaped unless it is marked
-            # safe -- the same rule as the label. A tooltip is the usual one to hold text
-            # somebody typed, and a quote in it closed the attribute and started another.
-            return mark_safe(' '.join([f'{k}="{conditional_escape(v)}"' for k, v in attributes.items()]))
+            # A value is written inside double quotes, so it is escaped unless it is marked safe
+            # -- the same rule as the label. A tooltip is the usual one to hold text somebody
+            # typed, and a quote in it closed the attribute and started another.
+            #
+            # A name is checked instead, and dropped when it is not a plain attribute name: it is
+            # not quoted, so escaping would not stop it, and `attributes=` and the
+            # `menu_config['attributes']` callable both let a caller supply the key.
+            return mark_safe(' '.join([
+                f'{k}="{conditional_escape(v)}"'
+                for k, v in attributes.items()
+                if attribute_name_is_safe(k)
+            ]))
         return ''
 
     def add_accessible_name(self, attributes):
@@ -395,11 +426,12 @@ class MenuItem(BaseMenuItem):
         display = self.menu_display
         if display.font_awesome:
             return f'<i class="{display.font_awesome}"></i> {display.text}'
-        # str(), because the old path was `mark_safe(self.text)` and `SafeString(None)` is the
-        # string `'None'`. Returning the value raw would stop a default keyed `'None'` or `'1'`
-        # matching, and start one keyed `None` or `1` matching, which is the opposite of the
-        # point of this property.
-        return str(display.text)
+        # `mark_safe`, which is the expression the lookup used to go through, rather than a
+        # `str()` that only looks equivalent. `SafeString(None)` is the string `'None'` and
+        # `SafeString(1)` is `'1'`, so a default keyed `'None'` or `'1'` still matches -- and an
+        # object carrying `__html__` is handed back *unchanged*, where `str()` would convert it
+        # and stop it matching a default keyed by that same object.
+        return mark_safe(display.text)
 
     @property
     def resolved_url(self):
