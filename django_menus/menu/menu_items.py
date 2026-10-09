@@ -1,9 +1,11 @@
 import json
+import re
 from urllib.parse import urlparse, urlencode
 
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from django.template.loader import render_to_string
 from django.urls import reverse, resolve, Resolver404
+from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 
 from django_menus.packs import pack_attribute, render_pack_template
@@ -117,6 +119,44 @@ class HeaderItem(BaseMenuItem):
             'header.html', {'text': self.text}, getattr(self.menu, 'request', None)))
 
 
+#: A plain attribute name: a letter, `_` or `:` to start, then letters, digits, `-`, `_`, `:` or
+#: `.`. No whitespace, quotes, `=`, `/` or angle brackets, so one key can never close its own
+#: attribute and open a second one.
+#:
+#: Used with `fullmatch`, not `match`: `$` matches *before a trailing newline* as well as at the
+#: end of the string, so `'data-id\n'` satisfies `...$` and the pattern would not mean what the
+#: line above it says.
+_ATTRIBUTE_NAME = re.compile(r'[A-Za-z_:][-A-Za-z0-9_:.]*')
+
+
+def attribute_name_is_safe(name):
+    """Whether `name` may be written as an attribute name.
+
+    Attribute names are **checked, not escaped**: escaping is the wrong tool here. A name is not
+    quoted in the output, so the characters that do the damage are the ones that end it -- a
+    space, `=`, a quote -- and a key of `x onmouseover` renders a second attribute the browser
+    runs, whatever is done to the value beside it.
+
+    `on*` is refused as well, so a key cannot be a native event handler. The ajax dropdown
+    templates do write an `onclick` of their own, but in their own markup rather than through this
+    dict, so refusing the name here does not disturb it -- and a caller passing `onclick` would
+    have put a second one on the same tag, which is its own reason to refuse. A menu item that
+    needs to run something has the javascript and ajax link types for it.
+
+    **What this does not promise.** That a name is inert in the page it lands on. `x-on:click`,
+    `@click`, `v-on:`, `hx-on:` and `data-action` are all well-formed names that execute under
+    some front-end framework, and this library cannot know which a consumer loads; refusing them
+    would break the callers using them deliberately, and the list has no end. The guarantee is
+    narrower and structural: **a name cannot become markup** -- it cannot close its own attribute,
+    open a second one, or end the tag -- and it cannot be a native `on*`.
+
+    If attribute *names* are reaching this from untrusted input, that is the thing to fix. No
+    policy here can help: `data-*` alone is enough to drive most framework code.
+    """
+    name = str(name)
+    return bool(_ATTRIBUTE_NAME.fullmatch(name)) and not name.lower().startswith('on')
+
+
 class MenuItemDisplay:
     def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None):
         self._css_classes = None
@@ -136,8 +176,41 @@ class MenuItemDisplay:
             self._attributes = attributes
 
     def display(self):
+        """The label, as ``{{ }}`` would print it: escaped unless it is marked safe.
+
+        A label is **text unless it says otherwise**. ``mark_safe`` here marked every one safe
+        whatever it held, so an item whose label came from a value -- a project name, a file name,
+        a report's name -- put that value into the page as markup, and the item was safe only
+        because the caller happened to escape it. A label that really is markup says so where it
+        is made (``mark_safe``, ``format_html``, a rendered template), and ``conditional_escape``
+        leaves it alone.
+
+        The icon goes through ``format_html`` for the same reason: ``font_awesome`` is written
+        into a ``class`` attribute, and it is not always a literal either.
+
+        ``None`` still reads as ``'None'``, as it did -- that is what a menu with no display shows
+        today, and changing it is a separate question from what a label may contain.
+        """
         if self.font_awesome:
-            return mark_safe(f'<i class="{self.font_awesome}"></i> {self.text}')
+            return format_html('<i class="{}"></i> {}', self.font_awesome, self.text)
+        return conditional_escape(self.text)
+
+    def default_key(self):
+        """The key `button_defaults` is matched on for an item showing this display.
+
+        Separate from `display()` because a key is not a rendering. `display()` escapes, and a
+        default keyed `R&D` has to go on matching a label of `R&D`; this returns what `display()`
+        returned *before* it escaped, so which items match which default is unchanged.
+
+        **A subclass with its own `display()` keeps the key that renderer gave**, without having
+        to hear about this method: the lookup used to go through `display()`, and a custom one is
+        the subclass's own code, untouched by the escaping added here, so calling it returns what
+        it always returned. Override this as well only to choose a *different* key.
+        """
+        if type(self).display is not MenuItemDisplay.display:
+            return self.display()
+        if self.font_awesome:
+            return f'<i class="{self.font_awesome}"></i> {self.text}'
         return mark_safe(self.text)
 
     @property
@@ -213,10 +286,12 @@ class MenuItem(BaseMenuItem):
     def menu(self, menu):
         self._menu = menu
         self._apply_menu_repeat_click_ms()
-        if menu.button_defaults and self.name in menu.button_defaults:
-            self.menu_display = menu.button_defaults[self.name]
-            if not isinstance(self.menu_display, MenuItemDisplay):
-                self.menu_display = MenuItemDisplay(self.menu_display)
+        if menu.button_defaults:
+            key = self.default_key
+            if key in menu.button_defaults:
+                self.menu_display = menu.button_defaults[key]
+                if not isinstance(self.menu_display, MenuItemDisplay):
+                    self.menu_display = MenuItemDisplay(self.menu_display)
         if self.dropdown:
             self.dropdown.menu = menu
 
@@ -321,7 +396,23 @@ class MenuItem(BaseMenuItem):
             attributes[pack_attribute('placement', request)] = 'bottom'
         self.add_accessible_name(attributes)
         if attributes:
-            return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
+            # A value is written inside double quotes, so it is escaped unless it is marked safe
+            # -- the same rule as the label. A tooltip is the usual one to hold text somebody
+            # typed, and a quote in it closed the attribute and started another.
+            #
+            # A name is checked instead, and dropped when it is not a plain attribute name: it is
+            # not quoted, so escaping would not stop it, and `attributes=` and the
+            # `menu_config['attributes']` callable both let a caller supply the key.
+            # `str(k)` once, and that same string is both checked and written. Interpolating
+            # `k` here instead would render `format(k)`, which a class is free to make differ
+            # from its `__str__` -- validating one representation and emitting another is the
+            # shape of the bug however unlikely the object.
+            names = ((str(k), v) for k, v in attributes.items())
+            return mark_safe(' '.join([
+                f'{name}="{conditional_escape(v)}"'
+                for name, v in names
+                if attribute_name_is_safe(name)
+            ]))
         return ''
 
     def add_accessible_name(self, attributes):
@@ -357,6 +448,20 @@ class MenuItem(BaseMenuItem):
     @property
     def name(self):
         return self.menu_display.display()
+
+    @property
+    def default_key(self):
+        """The key `button_defaults` is matched on, which the display decides.
+
+        Not `name`. `name` is the label *rendered* -- escaped, and with the icon's `<i>` in front
+        of the words when the item carries one -- and a key is not a rendering. Keyed on `name`,
+        a default keyed `R&D` stopped matching an item labelled `R&D` the moment `display()`
+        began escaping, silently and only for the keys that hold a character worth escaping.
+
+        It is `MenuItemDisplay.default_key` that answers, so a subclass with its own renderer can
+        say what its key is rather than have one reconstructed from fields it may not use.
+        """
+        return self.menu_display.default_key()
 
     @property
     def resolved_url(self):
