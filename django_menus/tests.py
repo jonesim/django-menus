@@ -493,3 +493,19 @@ class SafeTrueLetsALabelBeMarkup(SimpleTestCase):
         safe = MenuItem(url='#', link_type=MenuItem.HREF, menu_display='R&D', safe=True)
 
         self.assertEqual(plain.default_key, safe.default_key)
+
+    def test_a_display_passed_in_keeps_its_own_flag(self):
+        """Like its ``font_awesome`` and ``css_classes``: the item's ``safe`` does not override it."""
+        unsafe = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=MenuItemDisplay(self.MARKUP), safe=True)
+        safe = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=MenuItemDisplay(self.MARKUP, safe=True))
+
+        self.assertNotIn('<span', unsafe.name)
+        self.assertEqual(self.MARKUP, safe.name)
+
+    def test_a_subclass_that_skips_init_still_renders(self):
+        class Bare(MenuItemDisplay):
+            def __init__(self, text):
+                self.text = text
+                self.font_awesome = None
+
+        self.assertEqual('&lt;b&gt;', Bare('<b>').display())

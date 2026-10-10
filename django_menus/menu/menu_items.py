@@ -158,6 +158,9 @@ def attribute_name_is_safe(name):
 
 
 class MenuItemDisplay:
+    # On the class as well, so a subclass whose __init__ does not call this one still has it.
+    safe = False
+
     def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None, safe=False):
         self._css_classes = None
         self.safe = safe
