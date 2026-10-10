@@ -95,9 +95,9 @@ class View1(MainMenu):
         self.add_menu('menu_display', 'button_group', button_defaults=defaults).add_items(
             'url_name',
             ('string', 'String', {'css_classes': ['btn-secondary']}),
-            # Marked, because a label is text unless it says otherwise: this one is the example
+            # safe=True, because a label is text unless it says otherwise: this one is the example
             # *of* an html label, so it is exactly the case that has to say so.
-            ('string', mark_safe('<span class="btn-info">HTML<i class="fas fa-code"></i></span>')),
+            ('string', '<span class="btn-info">HTML<i class="fas fa-code"></i></span>', {'safe': True}),
             'view4',
             MenuItem('string', menu_display='String with font_awesome + CSS',
                      font_awesome='fas fa-exclamation-triangle', css_classes=['btn-success']),

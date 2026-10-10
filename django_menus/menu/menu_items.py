@@ -158,8 +158,9 @@ def attribute_name_is_safe(name):
 
 
 class MenuItemDisplay:
-    def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None):
+    def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None, safe=False):
         self._css_classes = None
+        self.safe = safe
 
         if isinstance(text, (tuple, list)):
             params = {c: v for c, v in enumerate(text)}
@@ -181,9 +182,9 @@ class MenuItemDisplay:
         A label is **text unless it says otherwise**. ``mark_safe`` here marked every one safe
         whatever it held, so an item whose label came from a value -- a project name, a file name,
         a report's name -- put that value into the page as markup, and the item was safe only
-        because the caller happened to escape it. A label that really is markup says so where it
-        is made (``mark_safe``, ``format_html``, a rendered template), and ``conditional_escape``
-        leaves it alone.
+        because the caller happened to escape it. A label that really is markup says so with
+        ``safe=True``; a label already marked safe where it was made (``mark_safe``,
+        ``format_html``, a rendered template) is left alone by ``conditional_escape`` too.
 
         The icon goes through ``format_html`` for the same reason: ``font_awesome`` is written
         into a ``class`` attribute, and it is not always a literal either.
@@ -191,9 +192,10 @@ class MenuItemDisplay:
         ``None`` still reads as ``'None'``, as it did -- that is what a menu with no display shows
         today, and changing it is a separate question from what a label may contain.
         """
+        text = mark_safe(self.text) if self.safe else self.text
         if self.font_awesome:
-            return format_html('<i class="{}"></i> {}', self.font_awesome, self.text)
-        return conditional_escape(self.text)
+            return format_html('<i class="{}"></i> {}', self.font_awesome, text)
+        return conditional_escape(text)
 
     def default_key(self):
         """The key `button_defaults` is matched on for an item showing this display.
@@ -317,7 +319,7 @@ class MenuItem(BaseMenuItem):
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
-                 query_string_params=None, django_menus_repeat_click_ms=None, **kwargs):
+                 query_string_params=None, django_menus_repeat_click_ms=None, safe=False, **kwargs):
         super().__init__(**kwargs, badge=badge)
         self.query_string_params = query_string_params
         self._resolved_url = None
@@ -356,7 +358,7 @@ class MenuItem(BaseMenuItem):
         if isinstance(menu_display, MenuItemDisplay):
             self.menu_display = menu_display
         else:
-            self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
+            self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes, safe=safe)
         self.kwargs = kwargs
         self.template = template
         self.target = target

@@ -444,3 +444,52 @@ class ADisplayOnlySubclassKeepsTheKeyItHad(SimpleTestCase):
 
         self.assertEqual('R&D', item.default_key)
         self.assertEqual('R&amp;D', item.name)
+
+
+class SafeTrueLetsALabelBeMarkup(SimpleTestCase):
+    """``safe=True`` says a label is markup, without wrapping it in ``mark_safe`` first.
+
+    Off by default, so a label is still text unless it says otherwise -- this is just the nicer
+    way of saying so.
+    """
+
+    MARKUP = '<span class="btn-info">HTML</span>'
+
+    def test_a_safe_label_is_not_escaped(self):
+        self.assertEqual(self.MARKUP, MenuItemDisplay(self.MARKUP, safe=True).display())
+
+    def test_a_safe_label_is_not_escaped_beside_an_icon_either(self):
+        rendered = MenuItemDisplay(self.MARKUP, font_awesome='fa fa-plus', safe=True).display()
+
+        self.assertEqual(f'<i class="fa fa-plus"></i> {self.MARKUP}', rendered)
+
+    def test_the_icon_class_is_still_escaped_when_the_label_is_safe(self):
+        """``safe`` is about the label. ``font_awesome`` goes in a class attribute, and stays text."""
+        rendered = MenuItemDisplay('Add', font_awesome='fa" onmouseover="alert(1)', safe=True).display()
+
+        self.assertNotIn('onmouseover="', rendered)
+
+    def test_a_label_is_still_escaped_by_default(self):
+        self.assertEqual('&lt;b&gt;Edit&lt;/b&gt;', MenuItemDisplay('<b>Edit</b>').display())
+
+    def test_a_tooltip_is_still_escaped_when_the_label_is_safe(self):
+        rendered = attributes_of(menu_display=MenuItemDisplay('Edit', tooltip='Bo"b', safe=True))
+
+        self.assertIn('title="Bo&quot;b"', rendered)
+
+    def test_a_menu_item_passes_it_to_the_display_it_builds(self):
+        item = MenuItem(url='#', link_type=MenuItem.HREF, menu_display=self.MARKUP, safe=True)
+
+        self.assertEqual(self.MARKUP, item.name)
+
+    def test_the_tuple_shorthand_takes_it_in_its_options(self):
+        menu = HtmlMenu(default_link_type=MenuItem.HREF).add_items(('#', self.MARKUP, {'safe': True}))
+
+        self.assertEqual(self.MARKUP, menu.menu_items[0].name)
+
+    def test_it_does_not_move_the_default_key(self):
+        """Which default an item picks up does not depend on whether its label is markup."""
+        plain = MenuItem(url='#', link_type=MenuItem.HREF, menu_display='R&D')
+        safe = MenuItem(url='#', link_type=MenuItem.HREF, menu_display='R&D', safe=True)
+
+        self.assertEqual(plain.default_key, safe.default_key)
