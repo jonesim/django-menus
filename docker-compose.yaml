@@ -14,5 +14,17 @@ services:
   ports:
    - 8009:8009
 
-
-
+ django_menus_bs5:
+  build:
+   context: ./
+   args:
+    PYTHON_VERSION: "3.13"
+    REQUIREMENTS: requirements_bs5.txt
+  volumes:
+   - ./django_examples/:/app
+   - ./django_menus/:/menus/django_menus
+  command: bash -c "python manage.py migrate --settings=django_examples.settings_bs5 && python manage.py runserver 0.0.0.0:8010 --settings=django_examples.settings_bs5"
+  environment:
+   - PYTHONPATH=/menus
+  ports:
+   - 8010:8010
