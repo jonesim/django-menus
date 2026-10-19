@@ -50,6 +50,30 @@ function is_hovered(el) {
     return el.matches(':hover');
 }
 
+// Click-opened menus also close on an outside click or Escape: Safari never fires focusout on a clicked link.
+function close_clicked_menus(except) {
+    document.querySelectorAll('.dropdown-menu.clicked').forEach(function (menu) {
+        if (menu !== except) {
+            hide_menu(menu);
+        }
+    });
+}
+
+document.addEventListener('click', function (e) {
+    document.querySelectorAll('.dropdown-menu.clicked').forEach(function (menu) {
+        var reference = document.getElementById(menu.id.replace(/-menu$/, ''));
+        if (!menu.contains(e.target) && !(reference && reference.contains(e.target))) {
+            hide_menu(menu);
+        }
+    });
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        close_clicked_menus();
+    }
+});
+
 var dropdown_menu_function = function dropdown_menu_function(reference) {
     var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
     reference = menu_element(reference);
@@ -89,6 +113,7 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
         if (menu.classList.contains('clicked')) {
             hide_menu(menu);
         } else {
+            close_clicked_menus(menu);
             menu.classList.add('clicked');
             show_menu(reference, menu, placement);
         }
@@ -116,6 +141,7 @@ var dropdown_menu_click = function dropdown_menu_click(reference) {
         if (menu.classList.contains('clicked')) {
             hide_menu(menu);
         } else {
+            close_clicked_menus(menu);
             menu.classList.add('clicked');
             show_menu(reference, menu, placement);
         }
