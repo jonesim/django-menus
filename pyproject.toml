@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-tab-menus"
-version = "0.0.18"
+version = "1.0.0"
 description = "Django app to render menus and load tabs with Ajax"
 readme = "readme.md"
 requires-python = ">=3.6"

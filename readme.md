@@ -19,6 +19,15 @@ INSTALLED_APPS = [
 ]
 ```
 
+### Upgrading from 0.0.x
+
+- The menu JavaScript no longer needs jQuery or Popper. Dropdowns are positioned by a bundled copy of Floating UI, which `{% lib_include module='django_menus.includes' %}` loads before `django_menus.js`.
+- Bootstrap 5 is supported through `CSS_FRAMEWORK = 'bootstrap5'` (needs django-ajax-helpers 1.0.1 or later).
+- Attribute values, including tooltips, are now escaped by default. Mark any value you escape yourself as safe; see [Escaping](#escaping).
+- Click-opened dropdowns also close on an outside click or Escape.
+
+To stay on the jQuery version, pin `django-tab-menus<1.0`.
+
 ## Quick Start
 
 The simplest menu is built with `HtmlMenu` and rendered in a template:

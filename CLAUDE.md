@@ -138,4 +138,6 @@ Part of a cross-package migration (summary in `X:\CLAUDE.md`). Status here: **jQ
 
 ## Releasing
 
-Full process in `X:\CLAUDE.md` → "Releasing a package". Summary: once-over the diff since the last release tag (`git fetch --tags origin` first), bump `version` in `pyproject.toml` (packaging was converted from setup.py — the version now lives only there), commit, run `X:\release.bat` — it tags `v<version>` and pushes, and `.github/workflows/publish.yml` publishes to PyPI via trusted publishing. First Actions release: confirm the GitHub `pypi` environment and the PyPI trusted publisher for `django-tab-menus` are configured.
+Full process in `X:\CLAUDE.md` → "Releasing a package". Summary: once-over the diff since the last release tag (`git fetch --tags origin` first), bump `version` in `pyproject.toml` (packaging was converted from setup.py — the version now lives only there), commit, run `X:\release.bat` — it tags `v<version>` and pushes, and `.github/workflows/publish.yml` publishes to PyPI via trusted publishing. 0.0.18 (Oct 2026) was the first Actions release and the last jQuery/Popper one; 1.0.0 is this branch.
+
+**Before releasing 1.0.0:** the `advance` remote (Tom's fork) brought its own `v1.0.0`–`v1.0.2` tags into the local repo, and `release.bat` pushes a local-only tag without checking which commit it points at. Delete them (`git tag -d v1.0.0 v1.0.1 v1.0.2`) and set `git config remote.advance.tagOpt --no-tags` first.
