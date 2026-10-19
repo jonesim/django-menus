@@ -3,6 +3,7 @@
 Every documented ``add_items`` form and every menu template is pinned to its exact rendered
 output.  The menu registry is purely additive, so any diff here is a regression.
 """
+from ajax_helpers.html_include import html_include
 from django.test import TestCase
 
 from django_menus.menu import (AjaxButtonMenuItem, DividerItem, HeaderItem, HtmlMenu, HtmlMenuItem,
@@ -141,7 +142,14 @@ class DropdownTests(TestCase):
                       '<div class="dropdown-divider"></div>'
                       '<a  class="dropdown-item " href="/contact/" >Contact Us</a>'
                       '</div>', html)
-        self.assertIn("dropdown_menu_function($('#ID1'), 'bottom-start')", html)
+        self.assertIn("dropdown_menu_function('ID1', 'bottom-start')", html)
+
+    def test_floating_ui_included_before_menus_js(self):
+        html = html_include(module='django_menus.includes')
+        scripts = [html.index(name) for name in ('floating-ui.core.umd.min.js', 'floating-ui.dom.umd.min.js',
+                                                 'django_menus.js')]
+        self.assertEqual(scripts, sorted(scripts))
+        self.assertIn('django_menus/django_menus.css', html)
 
 
 class TemplateTests(TestCase):
