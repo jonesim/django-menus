@@ -1,19 +1,60 @@
 import json
+import re
 from urllib.parse import urlparse, urlencode
 
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
+from django.conf import settings
 from django.template.loader import render_to_string
 from django.urls import reverse, resolve, Resolver404
+from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 
 from .. import css_framework
 
+# An attribute name that cannot close its own attribute or start another
+ATTRIBUTE_NAME = re.compile(r'[A-Za-z_:][-A-Za-z0-9_:.]*')
+
+
+def escape_labels():
+    return getattr(settings, 'DJANGO_MENUS_ESCAPE_LABELS', False)
+
+
+def escape_attributes():
+    return getattr(settings, 'DJANGO_MENUS_ESCAPE_ATTRIBUTES', True)
+
+
+def block_event_attributes():
+    return getattr(settings, 'DJANGO_MENUS_BLOCK_EVENT_ATTRIBUTES', False)
+
+
+def label_text(text, safe=False):
+    """Text for a label, header or badge: escaped when DJANGO_MENUS_ESCAPE_LABELS is on unless safe."""
+    if escape_labels() and not safe:
+        return conditional_escape(text)
+    return text
+
+
+def render_attributes(attributes):
+    """name="value" pairs, escaped and filtered as the DJANGO_MENUS_* settings ask."""
+    escape = escape_attributes()
+    block_events = block_event_attributes()
+    parts = []
+    for name, value in attributes.items():
+        name = str(name)
+        if escape and not ATTRIBUTE_NAME.fullmatch(name):
+            continue
+        if block_events and name.lower().startswith('on'):
+            continue
+        parts.append(f'{name}="{conditional_escape(value) if escape else value}"')
+    return mark_safe(' '.join(parts))
+
 
 class MenuItemBadge:
 
-    def __init__(self, badge_id=None, format_function=None, text=None, css_class=None):
+    def __init__(self, badge_id=None, format_function=None, text=None, css_class=None, safe=False):
         self.id = badge_id
         self.text = text
+        self.safe = safe
         self.css_class = css_class
         self.format_function = format_function
 
@@ -21,7 +62,7 @@ class MenuItemBadge:
         if self.format_function:
             self.format_function(self)
         if self.text:
-            return mark_safe(f'&nbsp;<sup><span class="{css_framework.css_classes().badge(self.css_class)}">{self.text}</span></sup>')
+            return mark_safe(f'&nbsp;<sup><span class="{css_framework.css_classes().badge(self.css_class)}">{label_text(self.text, self.safe)}</span></sup>')
         return ''
 
     def __str__(self):
@@ -92,17 +133,21 @@ class DividerItem(BaseMenuItem):
 class HeaderItem(BaseMenuItem):
     default_render = False
 
-    def __init__(self, text=None, **kwargs):
+    def __init__(self, text=None, safe=False, **kwargs):
         self.text = text
+        self.safe = safe
         super().__init__(**kwargs)
 
     def render(self):
-        return mark_safe(f'<div class="dropdown-header">{self.text}</div>')
+        return mark_safe(f'<div class="dropdown-header">{label_text(self.text, self.safe)}</div>')
 
 
 class MenuItemDisplay:
-    def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None):
+    safe = False
+
+    def __init__(self, text=None, font_awesome=None, css_classes=None, tooltip=None, attributes=None, safe=False):
         self._css_classes = None
+        self.safe = safe
 
         if isinstance(text, (tuple, list)):
             params = {c: v for c, v in enumerate(text)}
@@ -119,9 +164,21 @@ class MenuItemDisplay:
             self._attributes = attributes
 
     def display(self):
+        if escape_labels() and not self.safe:
+            if self.font_awesome:
+                return format_html('<i class="{}"></i> {}', self.font_awesome, self.text)
+            return label_text(self.text)
         if self.font_awesome:
             return mark_safe(f'<i class="{self.font_awesome}"></i> {self.text}')
         return mark_safe(self.text)
+
+    def default_key(self):
+        """The unescaped label, so button_defaults match whether or not labels are escaped."""
+        if type(self).display is not MenuItemDisplay.display:
+            return self.display()
+        if self.font_awesome:
+            return f'<i class="{self.font_awesome}"></i> {self.text}'
+        return f'{self.text}'
 
     @property
     def css_classes(self):
@@ -172,8 +229,9 @@ class MenuItem(BaseMenuItem):
     @menu.setter
     def menu(self, menu):
         self._menu = menu
-        if menu.button_defaults and self.name in menu.button_defaults:
-            self.menu_display = menu.button_defaults[self.name]
+        key = self.menu_display.default_key()
+        if menu.button_defaults and key in menu.button_defaults:
+            self.menu_display = menu.button_defaults[key]
             if not isinstance(self.menu_display, MenuItemDisplay):
                 self.menu_display = MenuItemDisplay(self.menu_display)
         if self.dropdown:
@@ -194,7 +252,7 @@ class MenuItem(BaseMenuItem):
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
-                 query_string_params=None, **kwargs):
+                 query_string_params=None, safe=False, **kwargs):
         super().__init__(**kwargs, badge=badge)
         self.query_string_params = query_string_params
         self._resolved_url = None
@@ -225,7 +283,7 @@ class MenuItem(BaseMenuItem):
         if isinstance(menu_display, MenuItemDisplay):
             self.menu_display = menu_display
         else:
-            self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes)
+            self.menu_display = MenuItemDisplay(menu_display, font_awesome, css_classes, safe=safe)
         self.kwargs = kwargs
         self.template = template
         self.target = target
@@ -258,7 +316,7 @@ class MenuItem(BaseMenuItem):
         attributes.update(self.menu_display.attributes())
         self.add_accessible_name(attributes)
         if attributes:
-            return mark_safe(' '.join([f'{k}="{v}"' for k, v in attributes.items()]))
+            return render_attributes(attributes)
         return ''
 
     def add_accessible_name(self, attributes):

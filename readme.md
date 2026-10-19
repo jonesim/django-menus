@@ -468,6 +468,22 @@ self.add_menu('actions', 'button_group',
               button_defaults={'save': MenuItemDisplay('Save', 'fas fa-check', 'btn-outline-primary')})
 ```
 
+## Escaping
+
+Three settings control how labels and attributes are written:
+
+```python
+DJANGO_MENUS_ESCAPE_ATTRIBUTES = True        # default True
+DJANGO_MENUS_ESCAPE_LABELS = False           # default False
+DJANGO_MENUS_BLOCK_EVENT_ATTRIBUTES = False  # default False
+```
+
+- `DJANGO_MENUS_ESCAPE_ATTRIBUTES` escapes attribute values (including `title` from `tooltip=`) and drops attribute names that are not plain names, so a quote in a value cannot break out of the tag. A value marked safe is written as it is.
+- `DJANGO_MENUS_ESCAPE_LABELS` escapes labels, `HeaderItem` text and `MenuItemBadge` text. Mark HTML with `safe=True` on `MenuItem`, `MenuItemDisplay`, `HeaderItem` or `MenuItemBadge`, or pass it through `mark_safe`/`format_html`.
+- `DJANGO_MENUS_BLOCK_EVENT_ATTRIBUTES` drops `on*` attributes such as `onclick`; use the `JAVASCRIPT` or AJAX link types instead.
+
+`DJANGO_MENUS_BUTTON_DEFAULTS` keys match the unescaped label in every mode.
+
 ## Bootstrap 4 / 5
 
 Markup follows the `CSS_FRAMEWORK` setting shared with `django-ajax-helpers` (the same setting that decides what `{% lib_include %}` loads):
