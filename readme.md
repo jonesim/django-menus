@@ -478,7 +478,7 @@ CSS_FRAMEWORK = 'bootstrap5'   # default 'bootstrap4'
 
 It switches navbar alignment (`ms-auto`/`me-auto`), button spacing, the context-menu caret, badge classes
 (`badge rounded-pill text-bg-<colour>`) and tooltip `data-bs-placement`. Custom menu templates receive the active class set
-as `css`, e.g. `{{ css.align_end }}`. Bootstrap 5 needs django-ajax-helpers 1.0.0.
+as `css`, e.g. `{{ css.align_end }}`. Bootstrap 5 needs django-ajax-helpers 1.0.1 or later (1.0.0 breaks AJAX posts).
 
 ## Template Tags
 
@@ -503,11 +503,17 @@ as `css`, e.g. `{{ css.align_end }}`. Bootstrap 5 needs django-ajax-helpers 1.0.
 ```bash
 # With Docker
 docker-compose up
-# Visit http://localhost:8009
+# Bootstrap 4: http://localhost:8009
+# Bootstrap 5: http://localhost:8010
 
 # Without Docker
 cd django_examples
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
+
+# Bootstrap 5 (needs django-ajax-helpers >= 1.0.1)
+python manage.py runserver --settings=django_examples.settings_bs5
 ```
+
+The Bootstrap 5 variant only sets `CSS_FRAMEWORK = 'bootstrap5'`. django-tab-menus' own JavaScript needs neither jQuery nor Popper (dropdowns are positioned by a bundled copy of [Floating UI](https://floating-ui.com/)), so it works in both modes.

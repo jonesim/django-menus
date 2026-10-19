@@ -13,12 +13,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 cd django_examples
 python manage.py migrate
 python manage.py runserver
+python manage.py runserver --settings=django_examples.settings_bs5   # Bootstrap 5; needs django-ajax-helpers >= 1.0.1
 ```
+
+Running natively on Windows fails with `'View1' object has no attribute 'app'` under either settings module: `show_src_code`'s `DemoViewMixin.package_button` matches the app with `c.path.split('/')`, which never matches a backslash path. Docker (Linux) is unaffected.
 
 **Docker (example project on port 8009):**
 ```bash
 docker-compose up
 ```
+
+Two services: `django_menus` (Bootstrap 4, port 8009, `requirements.txt` on Python 3.8) and `django_menus_bs5` (Bootstrap 5, port 8010, `requirements_bs5.txt` on Python 3.13 via Dockerfile build args, `settings_bs5` with its own `db_bs5.sqlite3`). ajax-helpers 1.0.x needs Python >= 3.9, hence the split. `requirements_bs5.txt` requires `django-ajax-helpers>=1.0.1`.
 
 **Build the package:**
 ```bash
@@ -108,16 +113,20 @@ DJANGO_MENUS_BUTTON_DEFAULTS = {
 
 ## jQuery removal & Bootstrap 5 support (in progress, July 2026)
 
-Part of a cross-package migration (summary in `X:\CLAUDE.md`). Status here: **barely started** — only the keyboard-shortcut path is converted.
+Part of a cross-package migration (summary in `X:\CLAUDE.md`). Status here: **jQuery- and Popper-free** — keyboard shortcuts, dropdowns and context menus are all vanilla JS; dropdowns are positioned by vendored Floating UI.
 
 ### Done (uncommitted)
 - `templates/django_menus/menu_key_press.html` converted to vanilla JS: `addEventListener('keydown')`, per-menu key dicts merged into a shared `window.django_menu_key_dict`, `django_modal` global now guarded.
 - Supporting hygiene (relative imports, defensive dict copies, `find_packages()` in setup.py, readme rewrite) — not functional migration.
 
-### Remaining — jQuery
-- **`static/django_menus/django_menus.js` is fully jQuery + Popper v1** (`new Popper(...)`). Rewrite needed for: `dropdown_menu_function` / `dropdown_menu_click` (hover/click dropdowns), and the `enable_context_menu` / `context_menu` ajax_helpers commands (`$(document).on` delegation, `$.each(this.dataset)`, `$(window)` metrics, `.outerWidth/outerHeight`, namespaced `click.contextMenu` events). `click_href` and `get_ajax_dropdown_menu` are already vanilla.
-- Must be converted **together with** `templates/django_menus/dropdown.html:14,16` — those call sites pass a jQuery object (`$('#{{ menu.id }}')`) into the JS functions; change them to pass an element or id.
-- Popper v1 → Popper v2 (`Popper.createPopper`) or pure CSS positioning; coordinate with whatever ajax_helpers ends up bundling (it currently ships Popper 1.16.1).
+### `static/django_menus/django_menus.js` — vanilla, positioned with Floating UI
+- Dropdowns are positioned by **Floating UI 1.8.0** (Popper's successor; Bootstrap 6 uses it too), vendored as `static/django_menus/floating-ui.core.umd.min.js` + `floating-ui.dom.umd.min.js` and loaded before `django_menus.js` by `includes.py` (`DjangoMenus.js_filename`, order pinned by `test_floating_ui_included_before_menus_js`). It exposes `window.FloatingUIDOM`, so it never clashes with the Popper v1 BS4's `bootstrap.js` needs; BS5 mode ships no usable Popper (`bootstrap.bundle`'s is private). To upgrade, replace both files from `cdn.jsdelivr.net/npm/@floating-ui/{core,dom}@<ver>/dist/*.umd.min.js` and bump the version in the `includes.py` comment.
+- `show_menu()` uses `computePosition` with `offset(MENU_GAP)`, `flip()`, `shift()` and the default `absolute` strategy — same model as Popper v1 (correct inside transformed ancestors, scrolls with its container, clipped by `overflow` ancestors exactly as 0.0.17 was). `autoUpdate` keeps an open menu attached; its cleanup is stored on `menu._menu_cleanup` and every close goes through `hide_menu()`, which stops it. Placement names are Floating UI/Popper ones (`bottom-start` default, `bottom-end`, `right-start` for nested items).
+- If `FloatingUIDOM` is missing (e.g. an AMD loader on the page captured the UMD build) menus still open, placed by Bootstrap's `.dropdown-menu` CSS.
+- `dropdown_menu_function` / `dropdown_menu_click` take an id (what `dropdown.html` now passes), an element, or a jQuery object for custom templates written against the old version.
+- `context_menu` inserts its html with `insert_context_menu()`, which re-creates `<script>` tags so nested dropdowns set themselves up — not via ajax_helpers' `replace_with`, which ajax-helpers 0.0.20 lacks.
+- No JS test harness in the repo. The Floating UI switch was verified with a headless Playwright run (BS4 on ajax-helpers 0.0.22, BS5 on 1.0.1) against pages rendered from real `HtmlMenu` dropdowns: hover/click open-close, autoUpdate stopped on close, bottom-start/bottom-end/right-start, flip, page scroll, scrolling container, transformed ancestor, jQuery-object reference, no-Floating-UI fallback. Context menus were not re-tested (unchanged); the earlier probe against both docker services covered them, nested `right-start`, `data-ajax` routing and the AJAX dropdown.
+- **ajax-helpers 1.0.0 is broken for AJAX POSTs:** its fetch client never sends `X-Requested-With`, but `is_ajax()` requires it, so every AJAX POST returns `None` → 500 (context menus, AJAX dropdowns, badge timers, buttons). Fixed in 1.0.1 (on PyPI). `pyproject.toml` excludes it (`django-ajax-helpers>=0.0.16,!=1.0.0` — the lower bound because `includes.py` passes a list as `js_filename`, supported since 0.0.16) and `settings_bs5` refuses to start on it.
 
 ### Bootstrap 5 — done (branch `bootstrap5`, based on `menu-registry`)
 **`css_framework.py`** — the framework comes from the ecosystem-wide `CSS_FRAMEWORK` setting via `ajax_helpers.config.get_css_framework()` (falls back to reading the setting directly on ajax-helpers 0.0.x, which has no `config` module). No package-specific setting. Pattern borrowed from django-modals' `field_render.py`: `Bootstrap4Classes` holds class-name tokens, `Bootstrap5Classes` overrides only what differs, `FRAMEWORKS` maps name → class, `css_classes()` returns a cached instance.
@@ -125,7 +134,7 @@ Part of a cross-package migration (summary in `X:\CLAUDE.md`). Status here: **ba
 - Python-built markup: `MenuItemBadge` → `css_classes().badge(colour)`; `MenuItem.attr()` tooltip placement → `data-placement` / `data-bs-placement`.
 - `ajax_tooltip.html` gets `tooltip_template` from `css_framework.tooltip_template()` — keyed on the **ajax_helpers version** (`AH_TOOLTIPS`: 1.0.0 → `ah-tooltip`/`ah-arrow`/`ah-tooltip-inner`), not on Bootstrap.
 - Tests: `tests/test_css_framework.py`; BS4 output stays byte-identical (pinned by `test_regression.py`).
-- Left: `static/django_menus/django_menus.css` targets `.navbar-dark` (deprecated in BS 5.3) — cosmetic. BS5 mode drops jQuery from the ajax_helpers bundle, so dropdowns/context menus still need the jQuery work above.
+- Left: `static/django_menus/django_menus.css` targets `.navbar-dark` (deprecated in BS 5.3) — cosmetic.
 
 ## Releasing
 
