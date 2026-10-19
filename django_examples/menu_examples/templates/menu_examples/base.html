@@ -22,11 +22,9 @@
 
 {% endblock %}
 <script>
-    $(document).ready(function () {
-        $(function () {
-              $('[data-tooltip="tooltip"]').tooltip()
-        })
-    })
+    document.querySelectorAll('[data-tooltip="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
 </script>
 </body>
 </html>

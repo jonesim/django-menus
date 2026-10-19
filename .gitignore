@@ -8,3 +8,4 @@ dist/
 /django-tab-menus.egg-info/
 /django_tab_menus.egg-info/
 .DS_Store
+/django_examples/db_bs5.sqlite3

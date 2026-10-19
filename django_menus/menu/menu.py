@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.views.generic import TemplateView, View
 
+from ..css_framework import css_classes
 from .menu_items import MenuItem, BaseMenuItem
 
 
@@ -90,7 +91,7 @@ class HtmlMenu:
             if getattr(i, 'key', None):
                 key_list = [i.key] if isinstance(i.key, str) else i.key
                 for key in key_list:
-                    key_data = {'shift': False, 'alt': False, 'href': i.href()}
+                    key_data = {'shift': False, 'alt': False, 'href': i.href(with_target=False)}
                     for k in key.split('-'):
                         if k.lower() == 'shift':
                             key_data['shift'] = True
@@ -105,7 +106,7 @@ class HtmlMenu:
             return ''
         keyboard = render_to_string(self.key_press_template,
                                     context={'key_dict': json.dumps(key_dict)}) if key_dict else ''
-        return mark_safe(render_to_string(self.template, context={'menu': self}) + extra_menus + keyboard)
+        return mark_safe(render_to_string(self.template, context={'menu': self, 'css': css_classes()}) + extra_menus + keyboard)
 
 
 class MenuMixin:

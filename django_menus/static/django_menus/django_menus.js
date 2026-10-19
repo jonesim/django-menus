@@ -1,82 +1,158 @@
+// Dropdowns are positioned by the vendored Floating UI (global FloatingUIDOM, so no clash with Bootstrap 4's Popper).
+
+var MENU_VIEWPORT_PADDING = 8;  // context menus: keep clear of the viewport edge
+var MENU_GAP = 2;
+
+// Accepts an id, an element or (for custom templates written against the jQuery version) a jQuery object.
+function menu_element(reference) {
+    if (typeof reference === 'string') {
+        return document.getElementById(reference);
+    }
+    if (reference && reference.jquery) {
+        return reference[0];
+    }
+    return reference;
+}
+
+// Shows the menu and keeps it positioned until hide_menu; without Floating UI, Bootstrap's CSS places it.
+function show_menu(reference, menu, placement) {
+    menu.classList.add('show');
+    if (typeof FloatingUIDOM === 'undefined') {
+        return;
+    }
+    var fui = FloatingUIDOM;
+    stop_positioning(menu);
+    Object.assign(menu.style, {position: 'absolute', margin: '0', right: 'auto', bottom: 'auto'});
+    menu._menu_cleanup = fui.autoUpdate(reference, menu, function () {
+        fui.computePosition(reference, menu, {
+            placement: placement,
+            middleware: [fui.offset(MENU_GAP), fui.flip(), fui.shift()]
+        }).then(function (pos) {
+            menu.style.left = pos.x + 'px';
+            menu.style.top = pos.y + 'px';
+        });
+    });
+}
+
+function stop_positioning(menu) {
+    if (menu._menu_cleanup) {
+        menu._menu_cleanup();
+        menu._menu_cleanup = null;
+    }
+}
+
+function hide_menu(menu) {
+    menu.classList.remove('show', 'clicked');
+    stop_positioning(menu);
+}
+
+function is_hovered(el) {
+    return el.matches(':hover');
+}
+
+// Click-opened menus also close on an outside click or Escape: Safari never fires focusout on a clicked link.
+function close_clicked_menus(except) {
+    document.querySelectorAll('.dropdown-menu.clicked').forEach(function (menu) {
+        if (menu !== except) {
+            hide_menu(menu);
+        }
+    });
+}
+
+document.addEventListener('click', function (e) {
+    document.querySelectorAll('.dropdown-menu.clicked').forEach(function (menu) {
+        var reference = document.getElementById(menu.id.replace(/-menu$/, ''));
+        if (!menu.contains(e.target) && !(reference && reference.contains(e.target))) {
+            hide_menu(menu);
+        }
+    });
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        close_clicked_menus();
+    }
+});
+
 var dropdown_menu_function = function dropdown_menu_function(reference) {
-  var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
-    var menu = $('#' + reference.attr('id') + '-menu');
-    var pop;
+    var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
+    reference = menu_element(reference);
+    var menu = document.getElementById(reference.id + '-menu');
 
-    menu.click(function () {
-        menu.removeClass('show clicked');
-    })
-
-    reference.hover(function (e) {
-        var reference = $(this);
-        var menu = $('#' + reference.attr('id') + '-menu');
-        if (pop == undefined) {
-            pop = new Popper(reference, menu, {placement: placement});
-        } else {
-            pop.update();
-        }
-        if (reference.is(':hover')) {
-            $('.menu-system.show').removeClass('show');
-            menu.addClass('show menu-system');
-        }
+    function hide_later(e) {
         setTimeout(function () {
-            if (!reference.is(':hover') && !menu.is(':hover') && !menu.hasClass('clicked')) {
-                menu.removeClass('show')
+            if (!is_hovered(reference) && !is_hovered(menu) && !menu.classList.contains('clicked')) {
+                hide_menu(menu);
             }
         }, e.type === 'mouseleave' ? 300 : 0);
+    }
+
+    menu.addEventListener('click', function () {
+        hide_menu(menu);
     });
 
-    menu.hover(function (e) {
-        setTimeout(function () {
-            if (!reference.is(':hover') && !menu.is(':hover') && !menu.hasClass('clicked')) {
-                menu.removeClass('show')
-            }
-        }, e.type === 'mouseleave' ? 300 : 0);
-    });
+    function reference_hover(e) {
+        if (is_hovered(reference)) {
+            document.querySelectorAll('.menu-system.show').forEach(function (el) {
+                if (el !== menu) {
+                    hide_menu(el);
+                }
+            });
+            menu.classList.add('menu-system');
+            show_menu(reference, menu, placement);
+        }
+        hide_later(e);
+    }
 
-    reference.click(function () {
-        if (menu.hasClass('clicked')) {
-            menu.removeClass('show clicked');
+    reference.addEventListener('mouseenter', reference_hover);
+    reference.addEventListener('mouseleave', reference_hover);
+    menu.addEventListener('mouseenter', hide_later);
+    menu.addEventListener('mouseleave', hide_later);
+
+    reference.addEventListener('click', function () {
+        if (menu.classList.contains('clicked')) {
+            hide_menu(menu);
         } else {
-            menu.addClass('show clicked');
+            close_clicked_menus(menu);
+            menu.classList.add('clicked');
+            show_menu(reference, menu, placement);
         }
     });
 
-    reference.focusout(function () {
-        if (menu.hasClass('clicked') &&  !menu.is(':hover')) {
-            menu.removeClass('show clicked');
+    reference.addEventListener('focusout', function () {
+        if (menu.classList.contains('clicked') && !is_hovered(menu)) {
+            hide_menu(menu);
         }
     });
 };
 
 var dropdown_menu_click = function dropdown_menu_click(reference) {
-  var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
-    var menu = $('#' + reference.attr('id') + '-menu');
-    var pop;
+    var placement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'bottom-start';
+    reference = menu_element(reference);
+    var menu = document.getElementById(reference.id + '-menu');
 
-    menu.click(function () {
-        if (menu.hasClass('clicked')) {
-            menu.removeClass('show clicked')
+    menu.addEventListener('click', function () {
+        if (menu.classList.contains('clicked')) {
+            hide_menu(menu);
         }
-    })
+    });
 
-    reference.click(function () {
-        if (pop == undefined) {
-            pop = new Popper(reference, menu, {placement: placement})
-        }
-        if (menu.hasClass('clicked')) {
-            menu.removeClass('show clicked')
+    reference.addEventListener('click', function () {
+        if (menu.classList.contains('clicked')) {
+            hide_menu(menu);
         } else {
-            menu.addClass('show clicked')
+            close_clicked_menus(menu);
+            menu.classList.add('clicked');
+            show_menu(reference, menu, placement);
         }
-    })
+    });
 
-    reference.focusout(function () {
-        if (menu.hasClass('clicked') &&  !menu.is(':hover')) {
-                menu.removeClass('show clicked')
-            }
-    })
-}
+    reference.addEventListener('focusout', function () {
+        if (menu.classList.contains('clicked') && !is_hovered(menu)) {
+            hide_menu(menu);
+        }
+    });
+};
 
 
 function click_href(href) {
@@ -90,49 +166,82 @@ function click_href(href) {
 
 
 ajax_helpers.command_functions.enable_context_menu = function (command) {
-    $(document).on("contextmenu", command.selector, function (evt) {
+    // Delegated, so elements added after page load get the menu too.
+    document.addEventListener('contextmenu', function (evt) {
+        var el = evt.target.closest ? evt.target.closest(command.selector) : null;
+        if (!el) {
+            return;
+        }
         evt.preventDefault();
 
         // Create a dictionary (object) to store data attributes and id
         var elementData = {'ajax': 'context_menu', 'pos': [evt.pageX, evt.pageY]};
-        elementData['id'] = $(this).attr('id');
+        elementData['id'] = el.id;
 
         // Get all data attributes and add them to the dictionary
-        $.each(this.dataset, function (key, value) {
-            elementData[key] = value;
-        });
-        ajax_helpers.event = evt
+        Object.assign(elementData, el.dataset);
+        ajax_helpers.event = evt;
         ajax_helpers.post_json({'data': elementData});
+    });
+};
+
+
+// Replaces #context-menu (or appends to body) with html. Scripts are re-created because innerHTML does not
+// run them, and nested dropdowns in the menu html set themselves up with a <script>.
+function insert_context_menu(html) {
+    var old = document.getElementById('context-menu');
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    var nodes = Array.prototype.slice.call(tmp.childNodes);
+    nodes.forEach(function (node) {
+        if (old) {
+            old.parentNode.insertBefore(node, old);
+        } else {
+            document.body.appendChild(node);
+        }
+    });
+    if (old) {
+        old.remove();
+    }
+    nodes.forEach(function (node) {
+        if (node.nodeType !== 1) {
+            return;
+        }
+        var scripts = node.tagName === 'SCRIPT' ? [node] : Array.prototype.slice.call(node.querySelectorAll('script'));
+        scripts.forEach(function (script) {
+            var fresh = document.createElement('script');
+            fresh.text = script.textContent;
+            script.parentNode.replaceChild(fresh, script);
+        });
     });
 }
 
 
+var context_menu_outside_click;
+
 ajax_helpers.command_functions.context_menu = function (command) {
-    if ($("#context-menu").length) {
-        $("#context-menu").replaceWith(command.menu);
-    } else {
-        $("body").append(command.menu);
-    }
-    var menu = $('#context-menu');
+    insert_context_menu(command.menu);
+    var menu = document.getElementById('context-menu');
 
     // Ensure the menu is valid before proceeding
-    if (!menu.length) {
+    if (!menu) {
         console.error('Dropdown menu not found');
         return;
     }
 
     // Get the viewport bounds in document coordinates. Context-menu events already
     // provide page coordinates, and AJAX dropdowns send document coordinates below.
-    var windowWidth = $(window).width();
-    var windowHeight = $(window).height();
-    var viewportLeft = $(window).scrollLeft();
-    var viewportTop = $(window).scrollTop();
+    var windowWidth = document.documentElement.clientWidth;
+    var windowHeight = document.documentElement.clientHeight;
+    var viewportLeft = window.scrollX;
+    var viewportTop = window.scrollY;
     var viewportRight = viewportLeft + windowWidth;
     var viewportBottom = viewportTop + windowHeight;
 
-    // Get the menu dimensions
-    var menuWidth = menu.outerWidth();
-    var menuHeight = menu.outerHeight();
+    // Measure while displayed; a hidden menu has no size.
+    menu.style.display = 'block';
+    var menuWidth = menu.offsetWidth;
+    var menuHeight = menu.offsetHeight;
 
     // Calculate the position
     var positionX = 0;
@@ -150,13 +259,11 @@ ajax_helpers.command_functions.context_menu = function (command) {
 
     // Keep oversized menus usable rather than allowing them to extend beyond both
     // edges of the viewport.
-    var viewportPadding = 8;
+    var viewportPadding = MENU_VIEWPORT_PADDING;
     if (menuHeight > windowHeight - (viewportPadding * 2)) {
-        menu.css({
-            'max-height': (windowHeight - (viewportPadding * 2)) + 'px',
-            'overflow-y': 'auto'
-        });
-        menuHeight = menu.outerHeight();
+        menu.style.maxHeight = (windowHeight - (viewportPadding * 2)) + 'px';
+        menu.style.overflowY = 'auto';
+        menuHeight = menu.offsetHeight;
     }
 
     // Adjust position to prevent overflow on the right
@@ -178,26 +285,27 @@ ajax_helpers.command_functions.context_menu = function (command) {
     positionY = Math.max(viewportTop + viewportPadding, positionY);
 
     // Position the menu at the adjusted coordinates
-    menu.css({
-        display: 'block',
-        top: `${positionY}px`,
-        left: `${positionX}px`
-    });
+    menu.style.top = positionY + 'px';
+    menu.style.left = positionX + 'px';
 
     // Hide the menu when clicking outside of it
-    $(document).on('click.contextMenu', function (e) {
-        if (!$(e.target).closest(menu).length) {
-            menu.hide();
+    if (context_menu_outside_click) {
+        document.removeEventListener('click', context_menu_outside_click);
+    }
+    context_menu_outside_click = function (e) {
+        if (!menu.contains(e.target)) {
+            menu.style.display = 'none';
             // Remove the click event handler after hiding the menu
-            $(document).off('click.contextMenu');
+            document.removeEventListener('click', context_menu_outside_click);
+            context_menu_outside_click = null;
         }
-    });
+    };
+    document.addEventListener('click', context_menu_outside_click);
 
     // Hides the menu as soon as you clicked it
-    menu.on('click', function (e) {
-        menu.hide();
+    menu.addEventListener('click', function () {
+        menu.style.display = 'none';
     });
-
 };
 
 function get_ajax_dropdown_menu(button, dropdownViewName, value) {

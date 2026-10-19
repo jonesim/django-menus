@@ -1,0 +1,6 @@
+Django==6.0.7
+django-ajax-helpers>=1.0.1
+django-show-source-code==0.0.8
+django-nested-modals==0.0.25
+django-crispy-forms==2.6
+make-html==0.0.3

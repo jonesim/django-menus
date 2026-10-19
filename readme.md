@@ -19,6 +19,15 @@ INSTALLED_APPS = [
 ]
 ```
 
+### Upgrading from 0.0.x
+
+- The menu JavaScript no longer needs jQuery or Popper. Dropdowns are positioned by a bundled copy of Floating UI, which `{% lib_include module='django_menus.includes' %}` loads before `django_menus.js`.
+- Bootstrap 5 is supported through `CSS_FRAMEWORK = 'bootstrap5'` (needs django-ajax-helpers 1.0.1 or later).
+- Attribute values, including tooltips, are now escaped by default. Mark any value you escape yourself as safe; see [Escaping](#escaping).
+- Click-opened dropdowns also close on an outside click or Escape.
+
+To stay on the jQuery version, pin `django-tab-menus<1.0`.
+
 ## Quick Start
 
 The simplest menu is built with `HtmlMenu` and rendered in a template:
@@ -468,6 +477,34 @@ self.add_menu('actions', 'button_group',
               button_defaults={'save': MenuItemDisplay('Save', 'fas fa-check', 'btn-outline-primary')})
 ```
 
+## Escaping
+
+Three settings control how labels and attributes are written:
+
+```python
+DJANGO_MENUS_ESCAPE_ATTRIBUTES = True        # default True
+DJANGO_MENUS_ESCAPE_LABELS = False           # default False
+DJANGO_MENUS_BLOCK_EVENT_ATTRIBUTES = False  # default False
+```
+
+- `DJANGO_MENUS_ESCAPE_ATTRIBUTES` escapes attribute values (including `title` from `tooltip=`) and drops attribute names that are not plain names, so a quote in a value cannot break out of the tag. A value marked safe is written as it is.
+- `DJANGO_MENUS_ESCAPE_LABELS` escapes labels, `HeaderItem` text and `MenuItemBadge` text. Mark HTML with `safe=True` on `MenuItem`, `MenuItemDisplay`, `HeaderItem` or `MenuItemBadge`, or pass it through `mark_safe`/`format_html`.
+- `DJANGO_MENUS_BLOCK_EVENT_ATTRIBUTES` drops `on*` attributes such as `onclick`; use the `JAVASCRIPT` or AJAX link types instead.
+
+`DJANGO_MENUS_BUTTON_DEFAULTS` keys match the unescaped label in every mode.
+
+## Bootstrap 4 / 5
+
+Markup follows the `CSS_FRAMEWORK` setting shared with `django-ajax-helpers` (the same setting that decides what `{% lib_include %}` loads):
+
+```python
+CSS_FRAMEWORK = 'bootstrap5'   # default 'bootstrap4'
+```
+
+It switches navbar alignment (`ms-auto`/`me-auto`), button spacing, the context-menu caret, badge classes
+(`badge rounded-pill text-bg-<colour>`) and tooltip `data-bs-placement`. Custom menu templates receive the active class set
+as `css`, e.g. `{{ css.align_end }}`. Bootstrap 5 needs django-ajax-helpers 1.0.1 or later (1.0.0 breaks AJAX posts).
+
 ## Template Tags
 
 ```html
@@ -491,11 +528,17 @@ self.add_menu('actions', 'button_group',
 ```bash
 # With Docker
 docker-compose up
-# Visit http://localhost:8009
+# Bootstrap 4: http://localhost:8009
+# Bootstrap 5: http://localhost:8010
 
 # Without Docker
 cd django_examples
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
+
+# Bootstrap 5 (needs django-ajax-helpers >= 1.0.1)
+python manage.py runserver --settings=django_examples.settings_bs5
 ```
+
+The Bootstrap 5 variant only sets `CSS_FRAMEWORK = 'bootstrap5'`. django-tab-menus' own JavaScript needs neither jQuery nor Popper (dropdowns are positioned by a bundled copy of [Floating UI](https://floating-ui.com/)), so it works in both modes.
