@@ -1,8 +1,8 @@
-"""Tooltip placement."""
+"""Tooltip placement and badges on dropdown items."""
 from django.test import SimpleTestCase, override_settings
 
-from django_menus.menu import HtmlMenu, MenuItem, MenuItemDisplay
-from tests.utils import make_request
+from django_menus.menu import HtmlMenu, MenuItem, MenuItemBadge, MenuItemDisplay
+from tests.utils import make_request, render_menu
 
 
 def item(*args, **kwargs):
@@ -34,3 +34,11 @@ class TooltipPlacementTests(SimpleTestCase):
     def test_bootstrap5_prefix(self):
         self.assertIn('data-bs-placement="top"', item('Edit', tooltip='Edit it', tooltip_placement='top').attributes())
 
+
+class DropdownBadgeTests(SimpleTestCase):
+
+    def test_badge_renders_in_dropdown_item(self):
+        menu = HtmlMenu(make_request()).add_items(
+            item('Support', dropdown=[item('Release Notes', badge=MenuItemBadge(text='New', css_class='success'))]))
+        self.assertIn('Release Notes&nbsp;<sup><span class="badge badge-pill badge-success">New</span></sup></a>',
+                      render_menu(menu))

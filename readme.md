@@ -259,7 +259,7 @@ def my_badge_fn(badge):
 MenuItem('inbox', 'Inbox', badge=MenuItemBadge('inbox-badge', my_badge_fn))
 ```
 
-The badge is rendered inside a `<span id="inbox-badge">` so it can be refreshed via AJAX without a page reload. Use `AjaxMenuTemplateView.timer_menu()` to poll for updates.
+The badge is rendered inside a `<span id="inbox-badge">` so it can be refreshed via AJAX without a page reload. Badges show on dropdown items too. Use `AjaxMenuTemplateView.timer_menu()` to poll for updates.
 
 ## Keyboard Shortcuts
 
