@@ -102,6 +102,7 @@ MenuItem(
     css_classes=None,           # str or list
     font_awesome=None,          # e.g. 'fas fa-edit'
     tooltip=None,
+    tooltip_placement=None,     # default: right in dropdowns and context menus, else bottom
     badge=None,                 # MenuItemBadge instance
     dropdown=None,              # tuple of items for a nested dropdown
     show_caret=True,

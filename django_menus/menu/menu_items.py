@@ -11,6 +11,9 @@ from django.utils.safestring import mark_safe
 
 from .. import css_framework
 
+# Menus whose items default to tooltips on the right, so a tooltip doesn't cover the next item
+SIDE_TOOLTIP_TEMPLATES = ('django_menus/dropdown.html', 'django_menus/context_menu.html')
+
 # An attribute name that cannot close its own attribute or start another
 ATTRIBUTE_NAME = re.compile(r'[A-Za-z_:][-A-Za-z0-9_:.]*')
 
@@ -193,8 +196,8 @@ class MenuItemDisplay:
         else:
             self._css_classes = css
 
-    def attributes(self):
-        return MenuItem.attr(self._attributes, self.tooltip)
+    def attributes(self, placement='bottom'):
+        return MenuItem.attr(self._attributes, self.tooltip, placement)
 
 
 class MenuItem(BaseMenuItem):
@@ -241,18 +244,24 @@ class MenuItem(BaseMenuItem):
         return ' '.join(self.menu_display.css_classes + (['disabled'] if self.disabled else []))
 
     @staticmethod
-    def attr(attributes, tooltip):
+    def attr(attributes, tooltip, placement='bottom'):
         attributes = {} if attributes is None else dict(attributes)
         if tooltip:
             attributes.update({'title': tooltip, 'data-tooltip': 'tooltip',
-                               css_framework.css_classes().data_prefix + 'placement': 'bottom'})
+                               css_framework.css_classes().data_prefix + 'placement': placement})
         return attributes
+
+    def tooltip_placement(self):
+        """The placement given, else right inside a dropdown or context menu and bottom elsewhere."""
+        if self._tooltip_placement:
+            return self._tooltip_placement
+        return 'right' if getattr(self.menu, 'template', None) in SIDE_TOOLTIP_TEMPLATES else 'bottom'
 
     def __init__(self, url=None, menu_display=None, link_type=URL_NAME, css_classes=None, template=None,
                  badge=None, target=None, dropdown=None, show_caret=True, font_awesome=None, no_hover=False,
                  placement='bottom-start', url_args=None, url_kwargs=None, attributes=None,
                  dropdown_template='dropdown', dropdown_kwargs=None, tooltip=None, key=None, permission_name=None,
-                 query_string_params=None, safe=False, **kwargs):
+                 query_string_params=None, safe=False, tooltip_placement=None, **kwargs):
         super().__init__(**kwargs, badge=badge)
         self.query_string_params = query_string_params
         self._resolved_url = None
@@ -265,7 +274,9 @@ class MenuItem(BaseMenuItem):
                 url_args = split_url[1:]
                 url = split_url[0]
         self._href = self.raw_href(url, url_args, url_kwargs, **kwargs)
-        self._attributes = self.attr(attributes, tooltip)
+        self._attributes = dict(attributes) if attributes else {}
+        self.tooltip = tooltip
+        self._tooltip_placement = tooltip_placement
         self.menu_config = {}
         if url is not None and link_type in self.RESOLVABLE_LINK_TYPES and self.resolved_url != 'invalid':
             view_class = getattr(self.resolved_url.func, 'view_class', None)
@@ -312,8 +323,8 @@ class MenuItem(BaseMenuItem):
                 attributes.update(self.menu_config['attributes'])
             else:
                 attributes.update(self.external_function(self.menu_config['attributes']))
-        attributes.update(self._attributes)
-        attributes.update(self.menu_display.attributes())
+        attributes.update(self.attr(self._attributes, self.tooltip, self.tooltip_placement()))
+        attributes.update(self.menu_display.attributes(self.tooltip_placement()))
         self.add_accessible_name(attributes)
         if attributes:
             return render_attributes(attributes)
