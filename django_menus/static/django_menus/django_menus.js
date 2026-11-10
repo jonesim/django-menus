@@ -2,6 +2,8 @@
 
 var MENU_VIEWPORT_PADDING = 8;  // context menus: keep clear of the viewport edge
 var MENU_GAP = 2;
+var MENU_HIDE_DELAY = 300;    // a hover menu closes once the pointer has been off it and its reference this long
+var MENU_SWITCH_DELAY = 150;  // the pointer must rest on another reference this long to replace an open menu
 
 // Accepts an id, an element or (for custom templates written against the jQuery version) a jQuery object.
 function menu_element(reference) {
@@ -79,34 +81,67 @@ var dropdown_menu_function = function dropdown_menu_function(reference) {
     reference = menu_element(reference);
     var menu = document.getElementById(reference.id + '-menu');
 
-    function hide_later(e) {
-        setTimeout(function () {
+    // One pending hide per menu, cancelled when the pointer comes back. A timer per mouseleave, never cancelled,
+    // closed the menu whenever one fired at an instant the pointer was briefly outside (fast moves near an edge).
+    var hide_timer = null;
+    var switch_timer = null;
+
+    function cancel_hide() {
+        clearTimeout(hide_timer);
+        hide_timer = null;
+    }
+
+    function hide_later() {
+        cancel_hide();
+        hide_timer = setTimeout(function () {
+            hide_timer = null;
             if (!is_hovered(reference) && !is_hovered(menu) && !menu.classList.contains('clicked')) {
                 hide_menu(menu);
             }
-        }, e.type === 'mouseleave' ? 300 : 0);
+        }, MENU_HIDE_DELAY);
+    }
+
+    function other_open_menus() {
+        return Array.prototype.filter.call(document.querySelectorAll('.menu-system.show'), function (el) {
+            return el !== menu;
+        });
+    }
+
+    function open_on_hover() {
+        other_open_menus().forEach(hide_menu);
+        menu.classList.add('menu-system');
+        show_menu(reference, menu, placement);
     }
 
     menu.addEventListener('click', function () {
         hide_menu(menu);
     });
 
-    function reference_hover(e) {
-        if (is_hovered(reference)) {
-            document.querySelectorAll('.menu-system.show').forEach(function (el) {
-                if (el !== menu) {
-                    hide_menu(el);
-                }
-            });
-            menu.classList.add('menu-system');
-            show_menu(reference, menu, placement);
+    reference.addEventListener('mouseenter', function () {
+        cancel_hide();
+        if (menu.classList.contains('show')) {
+            return;
         }
-        hide_later(e);
-    }
-
-    reference.addEventListener('mouseenter', reference_hover);
-    reference.addEventListener('mouseleave', reference_hover);
-    menu.addEventListener('mouseenter', hide_later);
+        // Passing over this reference on the way across another open menu (a wide megamenu sits right under the
+        // rest of the navbar) must not replace it, so only take over once the pointer has rested here.
+        clearTimeout(switch_timer);
+        if (other_open_menus().length) {
+            switch_timer = setTimeout(function () {
+                switch_timer = null;
+                if (is_hovered(reference)) {
+                    open_on_hover();
+                }
+            }, MENU_SWITCH_DELAY);
+        } else {
+            open_on_hover();
+        }
+    });
+    reference.addEventListener('mouseleave', function () {
+        clearTimeout(switch_timer);
+        switch_timer = null;
+        hide_later();
+    });
+    menu.addEventListener('mouseenter', cancel_hide);
     menu.addEventListener('mouseleave', hide_later);
 
     reference.addEventListener('click', function () {
