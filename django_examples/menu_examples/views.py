@@ -10,7 +10,7 @@ from show_src_code.modals import BaseSourceCodeModal
 from show_src_code.view_mixins import DemoViewMixin
 
 from django_menus.menu import DividerItem, AjaxMenuTemplateView, HtmlMenu, AjaxMenuTabs, MenuItemBadge, \
-    MenuItemDisplay
+    MenuItemDisplay, AdminMenuItem
 from django_menus.menu import MenuEntry, MenuItem, registry
 from django_menus.menu.context_menu import ContextMenuMixin
 from django_menus.menu.menu_items import HeaderItem
@@ -91,7 +91,7 @@ class View1(MainMenu):
     def menu_display_menu(self):
         defaults = {'edit': MenuItemDisplay('Edit-default', 'fas fa-pen', 'btn-success')}
 
-        self.add_menu('menu_display', 'button_group', button_defaults=defaults).add_items(
+        menu = self.add_menu('menu_display', 'button_group', button_defaults=defaults).add_items(
             'url_name',
             ('string', 'String', {'css_classes': ['btn-secondary']}),
             ('string', '<span class="btn-info">HTML<i class="fas fa-code"></i></span>'),
@@ -105,6 +105,9 @@ class View1(MainMenu):
             MenuItem('view1', 'global_edit'),  # comes from DJANGO_MENUS_BUTTON_DEFAULTS
             MenuItem('admin:index')
         )
+        if self.request.user.is_authenticated:
+            # The logged-in user's admin change page; hidden unless the admin lets them view or change users
+            menu.add_items(AdminMenuItem(self.request.user, 'My user in admin'))
 
     @staticmethod
     def demo_badge(badge):

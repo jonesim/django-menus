@@ -59,6 +59,7 @@ Coverage is the menu registry plus a regression baseline pinning every `add_item
 - `DividerItem` — Renders a `dropdown-divider` separator (used inside dropdowns).
 - `HeaderItem` — Renders a non-clickable `dropdown-header` section header (used inside dropdowns and context menus).
 - `AjaxButtonMenuItem` — Wraps `MenuItem` for AJAX form-submit buttons.
+- `AdminMenuItem(instance, menu_display='', site='admin', ...)` — link to an object's admin change page. Visibility asks the registered `ModelAdmin` (`site.has_permission` + `has_view_or_change_permission(request, obj)`) and overrides `resolve_visible` so it is re-checked per request rather than frozen to the first one. Hidden when unsaved (`_state.adding`) or unregistered; pk is passed through `admin.utils.quote()`; an unknown site name raises `ImproperlyConfigured`. Tests use a second admin site in `tests/urls_admin.py`.
 
 **`tabs.py`** — `AjaxMenuTabs`: tab-based interfaces where each tab loads content via AJAX. Tabs are either template-based or menu-based. Use `tab_response()` to handle tab switching.
 

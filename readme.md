@@ -162,6 +162,19 @@ from django_menus.menu import AjaxButtonMenuItem
 menu.add_items(AjaxButtonMenuItem('refresh', 'Refresh'))   # posts {"button": "refresh"}
 ```
 
+`AdminMenuItem` links to an object's change page in Django admin:
+
+```python
+from django_menus.menu import AdminMenuItem
+
+menu.add_items(AdminMenuItem(company))                        # icon-only, tooltip 'Django Admin'
+menu.add_items(AdminMenuItem(company, 'Admin', css_classes='btn-sm btn-outline-secondary'))
+```
+
+Visibility is decided by the admin itself: the site's `has_permission()` (active staff) and the registered `ModelAdmin`'s `has_view_or_change_permission(request, obj)`, so per-object permission overrides are respected. It is re-checked for every request. The item hides itself if the object is unsaved or its model isn't registered with the site.
+
+`site=` takes an `AdminSite` instance or its name (default `'admin'`); an unknown name raises `ImproperlyConfigured`. `visible=` (a bool or callable taking the request) narrows it further. An icon supplied in `menu_display` (tuple or `MenuItemDisplay`) replaces the default `fas fa-tools`.
+
 ## MenuItemDisplay
 
 Controls display properties — text, icon, CSS classes, tooltip, and HTML attributes:

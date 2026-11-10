@@ -5,6 +5,7 @@ from urllib.parse import urlparse, urlencode
 from ajax_helpers.templatetags.ajax_helpers import button_javascript
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse, resolve, Resolver404
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
@@ -447,3 +448,63 @@ class AjaxButtonMenuItem(MenuItem):
                          menu_display,
                          link_type=MenuItem.JAVASCRIPT,
                          **kwargs)
+
+
+def get_admin_site(site):
+    """An AdminSite instance, or the one whose name (its URL namespace) is ``site``."""
+    from django.contrib.admin.sites import AdminSite, all_sites
+    if isinstance(site, AdminSite):
+        return site
+    for admin_site in all_sites:
+        if admin_site.name == site:
+            return admin_site
+    raise ImproperlyConfigured(f"AdminMenuItem: no admin site named '{site}'")
+
+
+def display_has_icon(menu_display):
+    """True when menu_display supplies its own icon (a MenuItemDisplay is used as-is, so it always counts)."""
+    if isinstance(menu_display, MenuItemDisplay):
+        return True
+    return isinstance(menu_display, (tuple, list)) and len(menu_display) > 1 and bool(menu_display[1])
+
+
+class AdminMenuItem(MenuItem):
+    """Link to an object's Django admin change page, shown only to users that admin lets view or change it."""
+
+    default_font_awesome = 'fas fa-tools'
+
+    def __init__(self, instance, menu_display='', site='admin', font_awesome=None, tooltip='Django Admin',
+                 visible=True, **kwargs):
+        from django.contrib.admin.utils import quote
+
+        self.instance = instance
+        self.admin_site = get_admin_site(site)
+        self.extra_visible = visible
+        if menu_display is None:
+            menu_display = ''
+        if font_awesome is None and not display_has_icon(menu_display):
+            font_awesome = self.default_font_awesome
+        if instance._state.adding or instance.pk is None:
+            self.model_admin = None     # unsaved, so there is no change page yet
+        else:
+            self.model_admin = self.admin_site._registry.get(type(instance))
+        href = None
+        if self.model_admin is not None:
+            opts = instance._meta
+            href = reverse(f'{self.admin_site.name}:{opts.app_label}_{opts.model_name}_change',
+                           args=(quote(instance.pk),), current_app=self.admin_site.name)
+        super().__init__(href, menu_display, link_type=MenuItem.HREF, font_awesome=font_awesome, tooltip=tooltip,
+                         visible=self.admin_visible, **kwargs)
+
+    def admin_visible(self, request):
+        if self.model_admin is None or getattr(request, 'user', None) is None:
+            return False
+        if not (self.admin_site.has_permission(request)
+                and self.model_admin.has_view_or_change_permission(request, self.instance)):
+            return False
+        return bool(self.extra_visible(request) if callable(self.extra_visible) else self.extra_visible)
+
+    def resolve_visible(self, request):
+        """Checked afresh for every request, so an item rendered for one user never shows another user's result."""
+        self.visible = self.admin_visible(request)
+        return self.visible
