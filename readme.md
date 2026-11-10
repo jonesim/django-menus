@@ -213,6 +213,21 @@ menu.add_items(
 
 `HeaderItem` renders a non-clickable section header (`dropdown-header`); `DividerItem` a separator line. Options: `show_caret=False` hides the caret; `no_hover=True` requires a click to open.
 
+### Megamenus
+
+A long dropdown can be drawn as columns instead: pass `dropdown_template='mega'` and start each column with a `HeaderItem`. `icon` (Font Awesome classes) and `colour` (any CSS colour; `color` also works) style the column's heading, tint the column and colour its hover. `colour` is written into an inline style unchecked, so take it from code or settings, never from user input.
+
+```python
+MenuItem(menu_display='Settings', placement='bottom-end', dropdown_template='mega', dropdown=(
+    HeaderItem('Financial', icon='fas fa-coins', colour='#21965b'),
+    'tax_rates', 'exchange_rates', 'payment_terms',
+    HeaderItem('Users', icon='fas fa-user-shield', colour='#7a4fc9'),
+    'user_admin', 'permissions',
+))
+```
+
+The item list is the same as for a plain dropdown, so switching between the two is just the template. Items before the first header form a column without a heading, `HeaderItem()` with no text starts a new column without one (and renders nothing in a plain dropdown), dividers are dropped, and a header with nothing visible under it is left out along with its column. If no column has anything visible, the parent item is hidden. Items' tooltips open below, as elsewhere, rather than to the right over the next column. Columns wrap onto a second row rather than run off a narrow window, and stack below 768px. Use `placement='bottom-end'` for a menu near the right of the navbar. `icon` and `colour` are ignored by the other templates. Styling lives in `django_menus.css` under `.mega-menu`.
+
 ### AJAX-loaded dropdowns
 
 `AjaxMenuDropDownItem` renders a button whose dropdown contents are fetched from the server when clicked — useful when the items are expensive to build or depend on live data. The click posts `{"ajax": "<dropdown_view_name>"}` (default `'dropdown_menu'`) to the current view, which responds with `add_ajax_dropdown_menu`:
@@ -391,9 +406,10 @@ declares a `MenuEntry` of its own.
 |---|---|---|
 | `title` | capitalised section name | Label of the parent item built by `menu_item()`. |
 | `font_awesome` | — | Icon for the parent item. |
-| `groups` | none | Group names in render order. A `(name, header)` pair emits a `HeaderItem`. |
+| `groups` | none | Group names in render order. A `(name, header)` pair emits a `HeaderItem`; `(name, header, {'icon': ..., 'colour': ...})` styles it as a megamenu column heading (`header` may be `None`). In a `mega` section every group starts its own column, with or without a header. |
 | `sort` | `'alpha'` | `'alpha'` by display text, `'order'` by `MenuEntry(order=...)`, or `'declared'` by URLConf order. |
 | `divider` | on when grouped | Insert a `DividerItem` between groups. |
+| `mega` | `False` | Draw the section's dropdown as a megamenu, a column per group header. |
 | `default_group` | first group | Group for entries that name none. |
 
 Dividers and headers are only emitted between groups that still have visible items for this
@@ -417,7 +433,7 @@ their own display text alongside the registered items.
 ### Checking it
 
 Mistyped sections and groups, ambiguous url names and missing url arguments are reported by
-`manage.py check` (ids `django_menus.E001`–`E007`, `W001`–`W002`) and raise `ImproperlyConfigured`
+`manage.py check` (ids `django_menus.E001`–`E008`, `W001`–`W002`) and raise `ImproperlyConfigured`
 when the registry scans.
 
 `manage.py show_menu` prints the resolved tree so ordering is inspectable without running the site:

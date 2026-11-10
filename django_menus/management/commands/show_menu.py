@@ -185,7 +185,7 @@ class Command(BaseCommand):
         sections = []
         for name in names or configured:
             config = registry.section_config(name)
-            group_names = registry.section_groups(config)[0]
+            group_names = registry.group_names(config)
             items = []
             # --show-hidden has to suppress the registry's own filtering, otherwise the items it
             # is meant to reveal never reach the command.

@@ -1,20 +1,9 @@
 {% spaceless %}
 <div id='{{ menu.id }}-menu' class="dropdown-menu" role="menu">
     {% for i in menu.visible_items %}
-        {% if i.default_render %}
-            <a  class="dropdown-item {{ i.css }}" href="{{ i.href }}" {{ i.attributes }}>{{ i.name }}{{ i.badge }}</a>
-        {% else %}
-            {{ i.render }}
-        {% endif %}
+        {% include 'django_menus/dropdown_item.html' %}
     {% endfor %}
 </div>
 
-<script>
-    {% if menu.no_hover  %}
-        dropdown_menu_click('{{ menu.id }}', '{{ menu.placement }}')
-    {% else %}
-        dropdown_menu_function('{{ menu.id }}', '{{ menu.placement }}')
-    {% endif %}
-</script>
+{% include 'django_menus/dropdown_script.html' %}
 {% endspaceless %}
-

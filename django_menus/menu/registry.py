@@ -172,17 +172,55 @@ def section_config(section):
     return config
 
 
+HEADER_OPTIONS = ('icon', 'colour', 'color')
+
+
+def split_group(group):
+    """(name, header text or None, header options) for one entry of a section's groups."""
+    if isinstance(group, (tuple, list)):
+        return group[0], (group[1] if len(group) > 1 else None) or None, group[2] if len(group) > 2 else {}
+    return group, None, {}
+
+
+def group_errors(config):
+    """Messages for malformed header options in a section's groups.  Never raises."""
+    errors = []
+    for group in config.get('groups') or ():
+        if not (isinstance(group, (tuple, list)) and len(group) > 2):
+            continue
+        options = group[2]
+        if not isinstance(options, dict):
+            errors.append(f"group '{group[0]}' has {options!r} as its header options; expected a dict "
+                          f"with keys from {', '.join(HEADER_OPTIONS)}.")
+        else:
+            unknown = sorted(set(options) - set(HEADER_OPTIONS))
+            if unknown:
+                errors.append(f"group '{group[0]}' has unknown header option(s) {', '.join(unknown)}; "
+                              f"expected {', '.join(HEADER_OPTIONS)}.")
+    return errors
+
+
+def group_names(config):
+    return [split_group(group)[0] for group in config.get('groups') or ()]
+
+
 def section_groups(config):
-    """(ordered group names, {group name: header text}) for a section config."""
+    """(ordered group names, {group name: HeaderItem kwargs}) for a section config.
+
+    A group is a name, a (name, header) pair, or (name, header, {'icon': ..., 'colour': ...}) for
+    the column heading of a megamenu.  In a megamenu every group gets a HeaderItem, text-less when
+    it has no header, so each group starts its own column.
+    """
+    problems = group_errors(config)
+    if problems:
+        raise ImproperlyConfigured('django_menus: ' + ' '.join(problems))
     names = []
     headers = {}
     for group in config.get('groups') or ():
-        if isinstance(group, (tuple, list)):
-            names.append(group[0])
-            if len(group) > 1 and group[1]:
-                headers[group[0]] = group[1]
-        else:
-            names.append(group)
+        name, text, options = split_group(group)
+        names.append(name)
+        if text or options or config.get('mega'):
+            headers[name] = {'text': text, **options}
     return names, headers
 
 
@@ -283,17 +321,19 @@ def validate_spec(spec, required, errors):
             'E001', f"{spec.view_class.__name__}.menu_entry names section '{entry.section}', "
                     f'which is not in DJANGO_MENUS_SECTIONS.', obj=spec.view_class))
     else:
-        group_names = section_groups(config)[0]
-        if entry.group is not None and entry.group not in group_names:
+        for problem in group_errors(config):
+            errors.append(RegistryError('E008', f"section '{entry.section}': {problem}"))
+        names = group_names(config)
+        if entry.group is not None and entry.group not in names:
             errors.append(RegistryError(
                 'E002', f"{spec.view_class.__name__}.menu_entry names group '{entry.group}', "
                         f"which section '{entry.section}' does not define "
-                        f'({", ".join(group_names) or "it has no groups"}).', obj=spec.view_class))
-        elif entry.group is None and group_names:
+                        f'({", ".join(names) or "it has no groups"}).', obj=spec.view_class))
+        elif entry.group is None and names:
             errors.append(RegistryError(
                 'E002', f"section '{entry.section}' is grouped, but "
                         f'{spec.view_class.__name__}.menu_entry sets no group.',
-                obj=spec.view_class, hint=f'Groups: {", ".join(group_names)}'))
+                obj=spec.view_class, hint=f'Groups: {", ".join(names)}'))
         if config.get('sort', ALPHA) not in SORT_OPTIONS:
             errors.append(RegistryError(
                 'E007', f"section '{entry.section}' has sort='{config['sort']}'; expected one of "
@@ -417,7 +457,7 @@ def dropdown(section, request=None, *extra_items, group=None, filter_visible=Tru
         if contents and use_dividers:
             contents.append(DividerItem())
         if name in headers:
-            contents.append(HeaderItem(headers[name]))
+            contents.append(HeaderItem(**headers[name]))
         contents += items
     return contents
 
@@ -431,6 +471,8 @@ def menu_item(section, request=None, *extra_items, **menu_item_kwargs):
     menu_item_kwargs.setdefault('menu_display', config.get('title') or section.capitalize())
     if config.get('font_awesome'):
         menu_item_kwargs.setdefault('font_awesome', config['font_awesome'])
+    if config.get('mega'):
+        menu_item_kwargs.setdefault('dropdown_template', 'mega')
     contents = dropdown(section, request, *extra_items)
     item = MenuItem(dropdown=tuple(contents), **menu_item_kwargs)
     if not contents:

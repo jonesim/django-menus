@@ -173,6 +173,11 @@ class View1(MainMenu):
             MenuItem(menu_display='Divider', dropdown=('view1', 'view2', DividerItem(), 'view3')),
             MenuItem(menu_display='No Caret', show_caret=False, dropdown=('view1', 'view2', 'view3')),
             MenuItem(menu_display='No hover', no_hover=True, dropdown=('view1', 'view2', 'view3')),
+            MenuItem(menu_display='Megamenu', dropdown_template='mega', dropdown=(
+                HeaderItem('Views', icon='fas fa-eye', colour='#1d6fd6'), 'view1', 'view2',
+                HeaderItem('More views', icon='fas fa-layer-group', colour='#e0701b'), 'view3', 'view4',
+                HeaderItem('Plain header'), ('view1', 'No colour'),
+            )),
         )
 
     def setup_menu(self):

@@ -1,0 +1,16 @@
+{% spaceless %}
+<div id='{{ menu.id }}-menu' class="dropdown-menu mega-menu" role="menu">
+    {% for header, items in menu.columns %}
+        <div class="mega-menu-column{% if header.colour %} mega-menu-accent" style="--mega-menu-accent: {{ header.colour }}{% endif %}">
+            {% if header.label or header.icon %}
+                <div class="dropdown-header mega-menu-header">{% if header.icon %}<span class="mega-menu-icon"><i class="{{ header.icon }}"></i></span>{% endif %}<span>{{ header.label }}</span></div>
+            {% endif %}
+            {% for i in items %}
+                {% include 'django_menus/dropdown_item.html' %}
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+
+{% include 'django_menus/dropdown_script.html' %}
+{% endspaceless %}

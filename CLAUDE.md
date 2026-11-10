@@ -57,9 +57,11 @@ Coverage is the menu registry plus a regression baseline pinning every `add_item
 - `BaseMenuItem` — Abstract base for custom items; subclass and implement `visible`, `disabled`, `badge`.
 - `HtmlMenuItem` — Injects raw HTML into a menu.
 - `DividerItem` — Renders a `dropdown-divider` separator (used inside dropdowns).
-- `HeaderItem` — Renders a non-clickable `dropdown-header` section header (used inside dropdowns and context menus).
+- `HeaderItem` — Renders a non-clickable `dropdown-header` section header (used inside dropdowns and context menus). Optional `icon`/`colour` are used only by the megamenu template.
 - `AjaxButtonMenuItem` — Wraps `MenuItem` for AJAX form-submit buttons.
 - `AdminMenuItem(instance, menu_display='', site='admin', ...)` — link to an object's admin change page. Visibility asks the registered `ModelAdmin` (`site.has_permission` + `has_view_or_change_permission(request, obj)`) and overrides `resolve_visible` so it is re-checked per request rather than frozen to the first one. Hidden when unsaved (`_state.adding`) or unregistered; pk is passed through `admin.utils.quote()`; an unknown site name raises `ImproperlyConfigured`. Tests use a second admin site in `tests/urls_admin.py`.
+
+**Megamenu** — `dropdown_template='mega'` (`templates/django_menus/mega_dropdown.html`) draws a dropdown as columns. `HtmlMenu.columns()` splits the visible items at each `HeaderItem` after `render()`'s `test_visible` pass, drops `DividerItem`s and empty columns; the template iterates that instead of `visible_items`. A text-less `HeaderItem()` starts a column with no heading (and renders `''` elsewhere); `render()` returns `''` for a mega menu whose `columns()` is empty, so the parent hides. Item and script markup are shared with `dropdown.html` via `dropdown_item.html` / `dropdown_script.html`. `HeaderItem` takes explicit kwargs (no `**kwargs`) so a typo raises; `color` aliases `colour`. Registry sections opt in with `'mega': True` (sets `dropdown_template` in `menu_item()`, and makes `section_groups()` give every group a `HeaderItem` — text-less if it has no header — so headerless groups don't merge into the previous column); a group `(name, header, {'icon', 'colour'})` passes those through to the `HeaderItem`, validated by `group_errors()` (`E008`, and `ImproperlyConfigured` at build time). CSS is in `django_menus.css` under `.mega-menu` (colour via the `--mega-menu-accent` custom property, `color-mix()` for tints). Tests: `tests/test_mega_menu.py`.
 
 **`tabs.py`** — `AjaxMenuTabs`: tab-based interfaces where each tab loads content via AJAX. Tabs are either template-based or menu-based. Use `tab_response()` to handle tab switching.
 
@@ -72,7 +74,7 @@ Coverage is the menu registry plus a regression baseline pinning every `add_item
 - Sections come from `DJANGO_MENUS_SECTIONS`; `sort` is `'alpha'` (default), `'order'` or `'declared'`. Dividers and headers are emitted only between groups that still have visible items after `test_visible`, so a permission-hidden group leaves no stray separator.
 - The URLConf scan is cached on `get_urlconf() or settings.ROOT_URLCONF` — the same key Django's own `get_resolver` uses — and `clear_cache` is connected to `setting_changed` in `apps.ready()`.
 
-**`checks.py`** — system checks (`django_menus.E001`–`E007`, `W001`–`W002`) sharing `registry.validate()` with the scan, which also raises `ImproperlyConfigured`. `E005` catches a url pattern needing more arguments than the entry supplies, statically, without reversing.
+**`checks.py`** — system checks (`django_menus.E001`–`E008`, `W001`–`W002`) sharing `registry.validate()` with the scan, which also raises `ImproperlyConfigured`. `E005` catches a url pattern needing more arguments than the entry supplies, statically, without reversing.
 
 **`management/commands/show_menu.py`** — prints the resolved menu. Registry mode lists each section and everything the scan found; `--view <url_name>` instantiates the view, calls `setup_menu()` and walks `view.menus`, which is the only way to see the top-level skeleton and the `extra` items. `--format json` makes the output assertable.
 

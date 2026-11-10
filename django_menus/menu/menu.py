@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.views.generic import TemplateView, View
 
 from ..css_framework import css_classes
-from .menu_items import MenuItem, BaseMenuItem
+from .menu_items import MenuItem, BaseMenuItem, DividerItem, HeaderItem
 
 
 class HtmlMenu:
@@ -23,6 +23,7 @@ class HtmlMenu:
         'dropdown': 'django_menus/dropdown.html',
         'buttons': 'django_menus/button_menu.html',
         'context': 'django_menus/context_menu.html',
+        'mega': 'django_menus/mega_dropdown.html',
     }
 
     def __init__(self, request=None, template='base', menu_id=None, default_link_type=MenuItem.URL_NAME,
@@ -45,6 +46,23 @@ class HtmlMenu:
 
     def visible_items(self):
         return [i for i in self.menu_items if i.visible]
+
+    def columns(self):
+        """[(header, items)] for the megamenu template: the visible items split at each HeaderItem.
+
+        Items before the first header form a column with no header (None); a HeaderItem without text
+        starts a column with no heading.  Dividers are dropped - the columns separate the groups - and
+        a header with nothing visible under it is left out.
+        """
+        columns = []
+        for item in self.visible_items():
+            if isinstance(item, HeaderItem):
+                columns.append((item, []))
+            elif not isinstance(item, DividerItem):
+                if not columns:
+                    columns.append((None, []))
+                columns[-1][1].append(item)
+        return [column for column in columns if column[1]]
 
     def add_item(self, url_name=None, text=None,  link_type=None, **kwargs):
         link_type = link_type if link_type is not None else self.default_link_type
@@ -102,7 +120,8 @@ class HtmlMenu:
                     if 'key' in key_data:
                         key_dict[key_data['key']] = key_data
             no_items = False
-        if no_items:
+        if no_items or (self.template == self.templates['mega'] and not self.columns()):
+            # A megamenu whose only visible items are headers would open as an empty box
             return ''
         keyboard = render_to_string(self.key_press_template,
                                     context={'key_dict': json.dumps(key_dict)}) if key_dict else ''

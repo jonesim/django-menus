@@ -13,6 +13,7 @@ from django.utils.safestring import mark_safe
 from .. import css_framework
 
 # Menus whose items default to tooltips on the right, so a tooltip doesn't cover the next item
+# (not the megamenu: a tooltip on the right would cover the next column)
 SIDE_TOOLTIP_TEMPLATES = ('django_menus/dropdown.html', 'django_menus/context_menu.html')
 
 # An attribute name that cannot close its own attribute or start another
@@ -135,15 +136,33 @@ class DividerItem(BaseMenuItem):
 
 
 class HeaderItem(BaseMenuItem):
+    """A non-clickable section header.  In a megamenu (``dropdown_template='mega'``) each header starts
+    a column - ``HeaderItem()`` with no text starts one without a heading - and ``icon`` (Font Awesome
+    classes) and ``colour`` (any CSS colour; ``color`` is accepted too) style that column.  The other
+    templates ignore both, and render a text-less header as nothing.
+
+    ``colour`` goes into an inline style unchecked, so it must come from code or trusted settings,
+    never from user input."""
     default_render = False
 
-    def __init__(self, text=None, safe=False, **kwargs):
+    def __init__(self, text=None, safe=False, icon=None, colour=None, color=None, disabled=False, visible=True,
+                 menu=None, badge=None):
+        # Explicit parameters rather than **kwargs, so a misspelt option raises instead of vanishing
         self.text = text
         self.safe = safe
-        super().__init__(**kwargs)
+        self.icon = icon
+        self.colour = colour if colour is not None else color
+        super().__init__(disabled=disabled, visible=visible, menu=menu, badge=badge)
+
+    def label(self):
+        if self.text is None:
+            return ''
+        return mark_safe(label_text(self.text, self.safe))
 
     def render(self):
-        return mark_safe(f'<div class="dropdown-header">{label_text(self.text, self.safe)}</div>')
+        if self.text is None:
+            return ''
+        return mark_safe(f'<div class="dropdown-header">{self.label()}</div>')
 
 
 class MenuItemDisplay:
